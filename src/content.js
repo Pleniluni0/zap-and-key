@@ -162,7 +162,7 @@ function onKeybindModeKeyDown(e) {
 // ============ SHARED MOUSE HANDLERS (both modes) ============
 function onMouseOver(e) {
     if (!isZapMode && !isKeybindMode) return;
-    const outlineColor = isKeybindMode ? "#3498db" : "#ff0000";
+    const outlineColor = isKeybindMode ? "#2c3e50" : "#ff0000";
     e.target.style.outline = `2px solid ${outlineColor}`;
     hoveredElement = e.target;
 }
@@ -196,7 +196,7 @@ function updateModeUI(mode, active) {
 
         const isKeybind = mode === "keybind";
         const cursor = "crosshair";
-        const bg = isKeybind ? "#2980b9" : "#ff0000";
+        const bg = isKeybind ? "#2c3e50" : "#ff0000";
         const label = isKeybind ? "KEY BIND MODE ON (ESC to exit)" : "ZAP MODE ON (ESC to exit)";
 
         const style = document.createElement('style');
@@ -632,7 +632,7 @@ function handleKeybindKeydown(e) {
                     const prevOutline = el.style.outline;
                     const prevTransition = el.style.transition;
                     el.style.transition = 'outline 0.15s';
-                    el.style.outline = '3px solid #3498db';
+                    el.style.outline = '3px solid #2c3e50';
                     setTimeout(() => {
                         el.style.outline = prevOutline;
                         el.style.transition = prevTransition;
