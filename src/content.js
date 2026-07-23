@@ -502,13 +502,16 @@ function showKeybindToast(keyDisplay, label) {
     const existing = document.getElementById('zap-keybind-toast');
     if (existing) existing.remove();
 
+    const slot = _acquireToastSlot('zap-keybind-toast');
+    const topOffset = 20 + slot * 56;
+
     const toast = document.createElement('div');
     toast.id = 'zap-keybind-toast';
     toast.innerHTML = `<span>⌨️ <strong>${keyDisplay}</strong> asignado a «${escapeHtml(label)}»</span>`;
 
     Object.assign(toast.style, {
         position: 'fixed',
-        bottom: '20px',
+        top: topOffset + 'px',
         left: '50%',
         transform: 'translateX(-50%)',
         background: '#2980b9',
@@ -519,15 +522,57 @@ function showKeybindToast(keyDisplay, label) {
         fontFamily: 'sans-serif',
         fontSize: '14px',
         boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-        animation: 'zap-fade-in 0.2s ease-out'
+        animation: 'zap-fade-in-top 0.2s ease-out'
     });
 
     document.body.appendChild(toast);
 
     setTimeout(() => {
-        toast.style.animation = 'zap-fade-out 0.2s ease-out';
-        setTimeout(() => toast.remove(), 200);
+        toast.style.animation = 'zap-fade-out-top 0.2s ease-out';
+        setTimeout(() => {
+            toast.remove();
+            _releaseToastSlot('zap-keybind-toast');
+        }, 200);
     }, 3500);
+}
+
+function showKeybindActivationToast(keyDisplay, label) {
+    const id = 'zap-activation-toast';
+    const existing = document.getElementById(id);
+    if (existing) existing.remove();
+
+    const slot = _acquireToastSlot(id);
+    const topOffset = 20 + slot * 56;
+
+    const toast = document.createElement('div');
+    toast.id = id;
+    toast.innerHTML = `<span>⚡ <strong>${keyDisplay}</strong> → ${escapeHtml(label)}</span>`;
+
+    Object.assign(toast.style, {
+        position: 'fixed',
+        top: topOffset + 'px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: '#27ae60',
+        color: '#fff',
+        padding: '10px 18px',
+        borderRadius: '8px',
+        zIndex: '2147483647',
+        fontFamily: 'sans-serif',
+        fontSize: '13px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        animation: 'zap-fade-in-top 0.2s ease-out'
+    });
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'zap-fade-out-top 0.2s ease-out';
+        setTimeout(() => {
+            toast.remove();
+            _releaseToastSlot(id);
+        }, 200);
+    }, 2000);
 }
 
 // ============ KEYBIND KEYDOWN LISTENER (active on pages with binds) ============
@@ -580,6 +625,9 @@ function handleKeybindKeydown(e) {
                     e.preventDefault();
                     e.stopPropagation();
 
+                    // Show activation toast
+                    showKeybindActivationToast(formatKeyDisplay(e.key), bind.label);
+
                     // Visual feedback: brief blue glow
                     const prevOutline = el.style.outline;
                     const prevTransition = el.style.transition;
@@ -609,11 +657,29 @@ function loadKeybinds() {
     });
 }
 
+// ============ TOAST STACKING ============
+let _toastSlots = []; // tracks active toast IDs, index = vertical slot
+
+function _acquireToastSlot(id) {
+    // Remove from any existing slot first
+    _releaseToastSlot(id);
+    _toastSlots.push(id);
+    return _toastSlots.length - 1; // 0 = topmost
+}
+
+function _releaseToastSlot(id) {
+    const idx = _toastSlots.indexOf(id);
+    if (idx !== -1) _toastSlots.splice(idx, 1);
+}
+
 // ============ UNDO TOAST ============
 function showUndoToast(selector) {
     const existing = document.getElementById('zap-undo-toast');
     if (existing) existing.remove();
     if (undoTimeout) clearTimeout(undoTimeout);
+
+    const slot = _acquireToastSlot('zap-undo-toast');
+    const topOffset = 20 + slot * 56; // stack vertically
 
     const toast = document.createElement('div');
     toast.id = 'zap-undo-toast';
@@ -623,7 +689,7 @@ function showUndoToast(selector) {
     `;
     Object.assign(toast.style, {
         position: 'fixed',
-        bottom: '20px',
+        top: topOffset + 'px',
         left: '50%',
         transform: 'translateX(-50%)',
         background: '#2c3e50',
@@ -656,6 +722,7 @@ function showUndoToast(selector) {
         ev.stopPropagation();
         undoLastZap();
         toast.remove();
+        _releaseToastSlot('zap-undo-toast');
         if (undoTimeout) clearTimeout(undoTimeout);
     });
     undoBtn.addEventListener('mouseenter', () => {
@@ -670,12 +737,20 @@ function showUndoToast(selector) {
         kf.id = 'zap-toast-keyframes';
         kf.textContent = `
             @keyframes zap-fade-in {
-                from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+                from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
                 to   { opacity: 1; transform: translateX(-50%) translateY(0); }
             }
             @keyframes zap-fade-out {
                 from { opacity: 1; transform: translateX(-50%) translateY(0); }
-                to   { opacity: 0; transform: translateX(-50%) translateY(10px); }
+                to   { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            }
+            @keyframes zap-fade-in-top {
+                from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+                to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+            }
+            @keyframes zap-fade-out-top {
+                from { opacity: 1; transform: translateX(-50%) translateY(0); }
+                to   { opacity: 0; transform: translateX(-50%) translateY(-10px); }
             }
         `;
         document.head.appendChild(kf);
@@ -688,6 +763,7 @@ function showUndoToast(selector) {
         toast.style.animation = 'zap-fade-out 0.2s ease-out';
         setTimeout(() => {
             toast.remove();
+            _releaseToastSlot('zap-undo-toast');
             lastZappedSelector = null;
             lastZappedElement = null;
         }, 200);
