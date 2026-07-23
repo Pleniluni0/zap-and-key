@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zap & Key</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="container">
+    <h1>⚡ Zap &amp; Key ⌨️</h1>
+
+    <!-- ===== MODE CONTROLS ===== -->
+    <div class="controls">
+      <button id="toggleZap" class="btn btn-zap">Activar Zap Mode</button>
+      <button id="toggleKeybind" class="btn btn-keybind">Activar Key Bind Mode</button>
+    </div>
+
+    <!-- ===== ZAP RULES ===== -->
+    <div class="rules-section">
+      <h2>🗑️ Elementos Bloqueados</h2>
+      <div id="rulesList" class="rules-container">
+        <!-- Dynamic list -->
+      </div>
+      <div id="zapEmptyState" class="empty-state">No hay reglas todavía.</div>
+    </div>
+
+    <!-- ===== KEYBINDS ===== -->
+    <div class="rules-section keybinds-section">
+      <h2>⌨️ Atajos de Tecla</h2>
+      <div id="keybindsList" class="rules-container">
+        <!-- Dynamic list -->
+      </div>
+      <div id="keybindsEmptyState" class="empty-state">No hay atajos de tecla todav&iacute;a.</div>
+    </div>
+
+    <!-- ===== ACTIONS ===== -->
+    <div class="actions-section">
+      <button id="exportBtn" class="action-btn" title="Exportar reglas a JSON">📤 Exportar</button>
+      <button id="importBtn" class="action-btn" title="Importar reglas desde JSON">📥 Importar</button>
+      <input type="file" id="importFile" accept=".json" style="display:none">
+    </div>
+  </div>
+
+  <!-- Custom confirmation modal (for domain delete) -->
+  <div id="confirmModal" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+      <p id="confirmMsg"></p>
+      <div class="modal-buttons">
+        <button id="confirmYes" class="btn btn-danger">Eliminar</button>
+        <button id="confirmNo" class="btn btn-cancel">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+
+</html>

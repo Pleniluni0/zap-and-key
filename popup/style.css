@@ -1,0 +1,349 @@
+body {
+  width: 340px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 10px;
+  margin: 0;
+  background-color: #f4f4f9;
+  color: #333;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+h1 {
+  font-size: 1.15rem;
+  margin: 0;
+  text-align: center;
+  color: #2c3e50;
+}
+
+h2 {
+  font-size: 0.9rem;
+  margin: 0 0 5px 0;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 4px;
+}
+
+/* ============ CONTROLS (mode buttons) ============ */
+.controls {
+  display: flex;
+  gap: 6px;
+}
+
+.btn {
+  flex: 1;
+  padding: 9px 6px;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s, opacity 0.3s;
+  font-size: 0.82rem;
+}
+
+.btn-zap {
+  background-color: #e74c3c;
+}
+
+.btn-zap:hover {
+  background-color: #c0392b;
+}
+
+.btn-zap.active {
+  background-color: #c0392b;
+  box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px #e74c3c;
+}
+
+.btn-keybind {
+  background-color: #2980b9;
+}
+
+.btn-keybind:hover {
+  background-color: #1c6ea4;
+}
+
+.btn-keybind.active {
+  background-color: #1c6ea4;
+  box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px #2980b9;
+}
+
+.btn-danger {
+  background-color: #e74c3c;
+}
+
+.btn-danger:hover {
+  background-color: #c0392b;
+}
+
+.btn-cancel {
+  background-color: #95a5a6;
+}
+
+.btn-cancel:hover {
+  background-color: #7f8c8d;
+}
+
+/* ============ RULES SECTION (shared) ============ */
+.rules-section {
+  background: white;
+  padding: 8px;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.keybinds-section {
+  max-height: 180px;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid #eee;
+}
+
+li:last-child {
+  border-bottom: none;
+}
+
+.rule-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.78rem;
+  color: #555;
+}
+
+.keybind-label {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 0.78rem;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #aaa;
+  font-size: 1rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.delete-btn:hover {
+  color: #e74c3c;
+  background: #fde8e8;
+}
+
+.empty-state {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+  padding: 10px;
+  font-size: 0.82rem;
+}
+
+/* ============ ACCORDION / DETAILS ============ */
+details {
+  border-bottom: 1px solid #eee;
+  padding: 2px 0;
+}
+
+details:last-child {
+  border-bottom: none;
+}
+
+summary {
+  cursor: pointer;
+  font-weight: bold;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px;
+  background-color: #fafafa;
+  border-radius: 4px;
+}
+
+summary:hover {
+  background-color: #f0f0f0;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+.domain-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 4px;
+}
+
+.domain-name {
+  flex-grow: 1;
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+details ul {
+  padding-left: 8px;
+  margin-top: 3px;
+}
+
+details li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+  border-bottom: 1px dotted #eee;
+  font-size: 0.82em;
+}
+
+details li:last-child {
+  border-bottom: none;
+}
+
+.delete-domain-btn {
+  background: none;
+  border: none;
+  color: #e74c3c;
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 0 4px;
+  border-radius: 3px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.delete-domain-btn:hover {
+  color: #c0392b;
+  background: #fde8e8;
+}
+
+.pause-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0 4px;
+  border-radius: 3px;
+  transition: background 0.15s;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.pause-btn:hover {
+  background: #f0f0f0;
+  opacity: 1;
+}
+
+/* ============ KEYBIND BADGE ============ */
+.key-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 22px;
+  background: #2980b9;
+  color: #fff;
+  font-weight: bold;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  padding: 0 5px;
+  margin-right: 6px;
+  flex-shrink: 0;
+  font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.keybind-li {
+  gap: 4px;
+}
+
+/* ============ ACTIONS SECTION ============ */
+.actions-section {
+  display: flex;
+  gap: 6px;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 7px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #555;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.action-btn:hover {
+  background: #f0f0f0;
+  border-color: #bbb;
+}
+
+/* ============ CONFIRMATION MODAL ============ */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-box {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 280px;
+  width: 100%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  animation: modal-in 0.15s ease-out;
+}
+
+@keyframes modal-in {
+  from { transform: scale(0.9); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.modal-box p {
+  margin: 0 0 16px 0;
+  font-size: 0.9rem;
+  color: #333;
+  line-height: 1.4;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.modal-buttons .btn {
+  width: auto;
+  padding: 6px 18px;
+  font-size: 0.85rem;
+}
