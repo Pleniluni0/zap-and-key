@@ -418,6 +418,228 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ============ AUTO MODE ============
+    const autoSpeed = document.getElementById('autoSpeed');
+    const autoWait = document.getElementById('autoWait');
+    const autoNextKey = document.getElementById('autoNextKey');
+    const autoPlay = document.getElementById('autoPlay');
+    const autoStop = document.getElementById('autoStop');
+    const autoShortcutBtn = document.getElementById('autoShortcutBtn');
+
+    let autoActive = false;
+    let capturingShortcut = false;
+    let currentShortcut = null;  // { key, ctrlKey, altKey, shiftKey, metaKey } or null
+
+    function shortcutDisplay(sc) {
+        if (!sc || !sc.key) return 'Atajo: Ninguno';
+        const parts = [];
+        if (sc.ctrlKey) parts.push('Ctrl');
+        if (sc.altKey) parts.push('Alt');
+        if (sc.shiftKey) parts.push('Shift');
+        if (sc.metaKey) parts.push('Win');
+        parts.push(sc.key.length === 1 ? sc.key.toUpperCase() : formatKeyDisplay(sc.key));
+        return 'Atajo: ' + parts.join('+');
+    }
+
+    autoShortcutBtn.addEventListener('click', () => {
+        if (capturingShortcut) {
+            // Cancel capture
+            capturingShortcut = false;
+            autoShortcutBtn.textContent = shortcutDisplay(currentShortcut);
+            autoShortcutBtn.classList.remove('capturing');
+            return;
+        }
+
+        capturingShortcut = true;
+        autoShortcutBtn.textContent = 'Pulsa tecla(s)...';
+        autoShortcutBtn.classList.add('capturing');
+    });
+
+    // Capture keydown on the whole popup for shortcut recording
+    document.addEventListener('keydown', (e) => {
+        if (!capturingShortcut) return;
+
+        // Ignore pure modifier presses
+        if (e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt' || e.key === 'Meta') return;
+        // Escape cancels
+        if (e.key === 'Escape') {
+            capturingShortcut = false;
+            autoShortcutBtn.textContent = shortcutDisplay(currentShortcut);
+            autoShortcutBtn.classList.remove('capturing');
+            return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        currentShortcut = {
+            key: e.key,
+            ctrlKey: e.ctrlKey,
+            altKey: e.altKey,
+            shiftKey: e.shiftKey,
+            metaKey: e.metaKey
+        };
+
+        capturingShortcut = false;
+        autoShortcutBtn.textContent = shortcutDisplay(currentShortcut);
+        autoShortcutBtn.classList.remove('capturing');
+
+        // Persist immediately
+        saveAutoShortcutToStorage();
+    }, true);
+
+    // Allow right-click on shortcut button to clear it
+    autoShortcutBtn.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        currentShortcut = null;
+        autoShortcutBtn.textContent = 'Atajo: Ninguno';
+        capturingShortcut = false;
+        autoShortcutBtn.classList.remove('capturing');
+        saveAutoShortcutToStorage();
+    });
+
+    function saveAutoShortcutToStorage() {
+        if (!currentHostname) return;
+        chrome.storage.local.get(['zap_auto_config'], (result) => {
+            const config = result.zap_auto_config || {};
+            const domainConfig = config[currentHostname] || {};
+            domainConfig.autoShortcut = currentShortcut || undefined;
+            if (!currentShortcut) delete domainConfig.autoShortcut;
+            config[currentHostname] = domainConfig;
+            chrome.storage.local.set({ zap_auto_config: config }, () => {
+                // Notify content script to refresh shortcut listener
+                chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                    if (tabs.length === 0) return;
+                    chrome.tabs.sendMessage(tabs[0].id, {
+                        action: "refreshAutoShortcut"
+                    }).catch(() => {});
+                });
+            });
+        });
+    }
+
+    function populateAutoNextKey() {
+        const binds = allKeybinds[currentHostname] || [];
+        // Save current selection
+        const currentVal = autoNextKey.value;
+
+        autoNextKey.innerHTML = '<option value="">-- Sin keybind --</option>';
+
+        binds.forEach(bind => {
+            const option = document.createElement('option');
+            option.value = bind.key;
+            option.textContent = `${formatKeyDisplay(bind.key)} → ${bind.label}`;
+            autoNextKey.appendChild(option);
+        });
+
+        // Restore previous selection if still valid
+        if (binds.some(b => b.key === currentVal)) {
+            autoNextKey.value = currentVal;
+        }
+    }
+
+    function loadAutoConfig() {
+        chrome.storage.local.get(['zap_auto_config'], (result) => {
+            const config = result.zap_auto_config || {};
+            const domainConfig = config[currentHostname];
+
+            if (domainConfig) {
+                if (domainConfig.speed) autoSpeed.value = domainConfig.speed;
+                if (domainConfig.waitMs) autoWait.value = domainConfig.waitMs / 1000;
+                // Key selection will be populated after keybinds load
+                setTimeout(() => {
+                    if (domainConfig.nextKey) {
+                        autoNextKey.value = domainConfig.nextKey;
+                    }
+                }, 100);
+                // Restore shortcut
+                if (domainConfig.autoShortcut) {
+                    currentShortcut = domainConfig.autoShortcut;
+                    autoShortcutBtn.textContent = shortcutDisplay(currentShortcut);
+                }
+            }
+
+            // Check if auto-scroll is active
+            if (currentHostname) {
+                chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                    if (tabs.length === 0) return;
+                    chrome.tabs.sendMessage(tabs[0].id, { action: "getAutoStatus" })
+                        .then((response) => {
+                            if (response) {
+                                autoActive = response.active;
+                                updateAutoButtons();
+                            }
+                        })
+                        .catch(() => {});
+                });
+            }
+        });
+    }
+
+    function updateAutoButtons() {
+        if (autoActive) {
+            autoPlay.textContent = '▶ Auto ON';
+            autoPlay.classList.add('active');
+            autoStop.style.display = 'inline-block';
+            autoPlay.style.flex = '2';
+        } else {
+            autoPlay.textContent = '▶ Iniciar';
+            autoPlay.classList.remove('active');
+            autoStop.style.display = 'none';
+            autoPlay.style.flex = '1';
+        }
+    }
+
+    autoPlay.addEventListener('click', () => {
+        if (autoPlay.disabled) return;
+
+        const speed = autoSpeed.value;
+        const waitMs = Math.max(500, Math.min(10000, parseFloat(autoWait.value) * 1000 || 2000));
+        const nextKey = autoNextKey.value || null;
+
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs.length === 0) return;
+            chrome.tabs.sendMessage(tabs[0].id, {
+                action: "startAutoScroll",
+                speed: speed,
+                nextKey: nextKey,
+                waitMs: waitMs,
+                saveConfig: true
+            }).then((response) => {
+                if (response) {
+                    autoActive = response.active;
+                    updateAutoButtons();
+                }
+            }).catch(() => {});
+        });
+
+        window.close();
+    });
+
+    autoStop.addEventListener('click', () => {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs.length === 0) return;
+            chrome.tabs.sendMessage(tabs[0].id, {
+                action: "stopAutoScroll",
+                saveConfig: true
+            }).then((response) => {
+                if (response) {
+                    autoActive = response.active;
+                    updateAutoButtons();
+                }
+            }).catch(() => {});
+        });
+
+        window.close();
+    });
+
+    // Populate the next-key dropdown whenever keybinds are loaded
+    const originalRenderKeybinds = renderKeybinds;
+    renderKeybinds = function () {
+        originalRenderKeybinds();
+        populateAutoNextKey();
+    };
+
     // ============ CONFIRMATION MODALS ============
     function openConfirmModal(hostname) {
         pendingConfirm = { type: 'zap', hostname };
@@ -524,4 +746,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ============ INIT ============
     loadAll();
+    loadAutoConfig();
 });

@@ -12,6 +12,14 @@ let _keybindsCache = {};       // hostname → [{selector, key, label}]
 let _capturingKeybind = false; // true while the "press a key" overlay is open
 let _keydownHandlerBound = null;
 
+// ── Auto-scroll state ──
+let _autoScrollActive = false;
+let _autoScrollRafId = null;
+let _autoConfig = {};  // hostname → { speed, nextKey, waitMs, enabled }
+let _autoScrollAtBottom = false;
+let _autoScrollBottomTimer = null;
+let _autoScrollCountdownInterval = null;
+
 // ============ MUTATION OBSERVER (SPA resilience) ============
 const domObserver = new MutationObserver(() => {
     if (!document.getElementById('zap-element-styles') && !_pausedCache) {
@@ -100,6 +108,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // ── Keybind CRUD (called from popup) ──
         case "deleteKeybind":
             deleteKeybindFromStore(request.hostname, request.index);
+            sendResponse({ success: true });
+            break;
+
+        // ── Auto-scroll ──
+        case "startAutoScroll":
+            startAutoScroll(request.speed, request.nextKey, request.waitMs, request.saveConfig);
+            sendResponse({ success: true, active: _autoScrollActive });
+            break;
+
+        case "stopAutoScroll":
+            stopAutoScroll(request.saveConfig);
+            sendResponse({ success: true, active: _autoScrollActive });
+            break;
+
+        case "toggleAutoScroll":
+            toggleAutoScroll();
+            sendResponse({ success: true, active: _autoScrollActive });
+            break;
+
+        case "getAutoStatus":
+            sendResponse({
+                active: _autoScrollActive,
+                config: _autoConfig[window.location.hostname] || null
+            });
+            break;
+
+        case "refreshAutoShortcut":
+            loadAutoConfig();
             sendResponse({ success: true });
             break;
     }
@@ -973,7 +1009,333 @@ function escapeHtml(str) {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// ============ STORAGE CHANGE LISTENER ============
+// ============ AUTO-SCROLL ENGINE ============
+const AUTO_SPEEDS = {
+    slow: 0.8,       // px per frame (~50 px/s at 60fps)
+    slowMedium: 1.4,  // ~85 px/s
+    medium: 2,        // ~120 px/s
+    mediumFast: 3,    // ~180 px/s
+    fast: 4           // ~240 px/s
+};
+
+function loadAutoConfig() {
+    const hostname = window.location.hostname;
+    chrome.storage.local.get(['zap_auto_config'], (result) => {
+        _autoConfig = result.zap_auto_config || {};
+        const domainConfig = _autoConfig[hostname];
+        setupAutoShortcutListener();
+        if (domainConfig && domainConfig.enabled) {
+            console.log('Zap & Key: Auto-scroll resuming for', hostname);
+            startAutoScroll(domainConfig.speed, domainConfig.nextKey, domainConfig.waitMs, false);
+        }
+    });
+}
+
+function saveAutoConfig(hostname, config) {
+    _autoConfig[hostname] = { ...(_autoConfig[hostname] || {}), ...config };
+    chrome.storage.local.set({ zap_auto_config: _autoConfig }, () => {
+        setupAutoShortcutListener();
+    });
+}
+
+function startAutoScroll(speed, nextKey, waitMs, saveConfig) {
+    const hostname = window.location.hostname;
+
+    if (_autoScrollActive) stopAutoScroll(false);
+
+    const pxPerFrame = AUTO_SPEEDS[speed] || AUTO_SPEEDS.medium;
+    const wait = (typeof waitMs === 'number' && waitMs >= 500) ? waitMs : 2000;
+
+    _autoScrollActive = true;
+    _autoScrollAtBottom = false;
+
+    if (saveConfig !== false) {
+        saveAutoConfig(hostname, { speed, nextKey, waitMs, enabled: true });
+    }
+
+    updateAutoBadge(true);
+
+    function scrollStep() {
+        if (!_autoScrollActive) return;
+
+        const before = window.scrollY;
+        window.scrollBy(0, pxPerFrame);
+        const after = window.scrollY;
+
+        // Detect if we reached the bottom (scroll didn't move, or we're at bottom)
+        const atBottom =
+            (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 5) ||
+            (before === after && window.scrollY > 0);
+
+        if (atBottom && !_autoScrollAtBottom) {
+            _autoScrollAtBottom = true;
+            onAutoScrollReachBottom(nextKey, wait);
+            return; // Stop the RAF loop; will be restarted after navigation or if bottom resolves
+        }
+
+        if (!atBottom) {
+            _autoScrollAtBottom = false;
+            if (_autoScrollBottomTimer) {
+                clearTimeout(_autoScrollBottomTimer);
+                _autoScrollBottomTimer = null;
+            }
+            if (_autoScrollCountdownInterval) {
+                clearInterval(_autoScrollCountdownInterval);
+                _autoScrollCountdownInterval = null;
+                updateAutoBadge(true); // restore normal badge
+            }
+        }
+
+        _autoScrollRafId = requestAnimationFrame(scrollStep);
+    }
+
+    _autoScrollRafId = requestAnimationFrame(scrollStep);
+    console.log(`Zap & Key: Auto-scroll started (${speed}, nextKey=${nextKey}, wait=${wait}ms)`);
+}
+
+function stopAutoScroll(saveConfig) {
+    _autoScrollActive = false;
+
+    if (_autoScrollRafId) {
+        cancelAnimationFrame(_autoScrollRafId);
+        _autoScrollRafId = null;
+    }
+
+    if (_autoScrollBottomTimer) {
+        clearTimeout(_autoScrollBottomTimer);
+        _autoScrollBottomTimer = null;
+    }
+
+    if (_autoScrollCountdownInterval) {
+        clearInterval(_autoScrollCountdownInterval);
+        _autoScrollCountdownInterval = null;
+    }
+
+    _autoScrollAtBottom = false;
+
+    updateAutoBadge(false);
+
+    if (saveConfig !== false) {
+        const hostname = window.location.hostname;
+        if (_autoConfig[hostname]) {
+            _autoConfig[hostname].enabled = false;
+            chrome.storage.local.set({ zap_auto_config: _autoConfig });
+        }
+    }
+
+    console.log('Zap & Key: Auto-scroll stopped');
+}
+
+function toggleAutoScroll() {
+    if (_autoScrollActive) {
+        stopAutoScroll(true);
+    } else {
+        const hostname = window.location.hostname;
+        const config = _autoConfig[hostname];
+        if (config) {
+            startAutoScroll(config.speed, config.nextKey, config.waitMs, true);
+        } else {
+            // Fallback: use defaults (no keybind needed for just scrolling)
+            startAutoScroll('medium', null, 2000, true);
+        }
+    }
+}
+
+function onAutoScrollReachBottom(nextKey, waitMs) {
+    console.log(`Zap & Key: Bottom reached, waiting ${waitMs}ms...`);
+
+    const totalSeconds = Math.ceil(waitMs / 1000);
+    let remaining = totalSeconds;
+
+    // Show initial countdown on badge
+    updateAutoBadgeCountdown(remaining);
+
+    _autoScrollCountdownInterval = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+            clearInterval(_autoScrollCountdownInterval);
+            _autoScrollCountdownInterval = null;
+
+            if (!_autoScrollActive) return;
+
+            if (nextKey) {
+                // Simulate the keybind — find and click the element directly
+                const hostname = window.location.hostname;
+                const binds = _keybindsCache[hostname] || [];
+                const bind = binds.find(b => b.key === nextKey);
+
+                if (bind) {
+                    try {
+                        const el = document.querySelector(bind.selector);
+                        if (el) {
+                            console.log(`Zap & Key: Auto-scroll triggering next: ${nextKey} → ${bind.selector}`);
+                            el.click();
+                            // Auto-scroll will resume on the next page via loadAutoConfig()
+                            return;
+                        }
+                    } catch (_) { /* selector invalid */ }
+                }
+                console.warn(`Zap & Key: Auto-scroll next key "${nextKey}" not found in keybinds`);
+            }
+
+            // If we're still on the same page (no navigation happened), restart scroll
+            _autoScrollAtBottom = false;
+            _autoScrollBottomTimer = null;
+            updateAutoBadge(true); // restore normal badge
+        } else {
+            updateAutoBadgeCountdown(remaining);
+        }
+    }, 1000);
+}
+
+function updateAutoBadge(active) {
+    const badgeId = 'zap-auto-badge';
+
+    if (active) {
+        const existing = document.getElementById(badgeId);
+        if (existing) {
+            existing.innerHTML = '⏸';
+            existing.title = 'Parar Auto-Scroll';
+            existing.style.fontSize = '16px';
+            existing.style.fontWeight = 'normal';
+            existing.style.background = '#8e44ad';
+            existing.style.animation = '';
+            return;
+        }
+
+        const badge = document.createElement('div');
+        badge.id = badgeId;
+        badge.innerHTML = '⏸';
+        badge.title = 'Parar Auto-Scroll';
+
+        Object.assign(badge.style, {
+            position: 'fixed',
+            bottom: '12px',
+            left: '12px',
+            width: '34px',
+            height: '34px',
+            background: '#8e44ad',
+            color: '#ffffff',
+            zIndex: '2147483646',
+            fontFamily: 'sans-serif',
+            fontSize: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            borderRadius: '50%',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.35)',
+            opacity: '0.8',
+            transition: 'opacity 0.2s, transform 0.2s',
+            pointerEvents: 'auto',
+            userSelect: 'none',
+            lineHeight: '1'
+        });
+
+        badge.addEventListener('mouseenter', () => {
+            badge.style.opacity = '1';
+            badge.style.transform = 'scale(1.12)';
+        });
+        badge.addEventListener('mouseleave', () => {
+            badge.style.opacity = '0.8';
+            badge.style.transform = 'scale(1)';
+        });
+        badge.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleAutoScroll();
+        });
+
+        document.body.appendChild(badge);
+    } else {
+        const badge = document.getElementById(badgeId);
+        if (badge) badge.remove();
+    }
+}
+
+function updateAutoBadgeCountdown(seconds) {
+    const badgeId = 'zap-auto-badge';
+    const badge = document.getElementById(badgeId);
+
+    if (!badge) {
+        // Fallback: create it if missing (shouldn't happen normally)
+        updateAutoBadge(true);
+        return updateAutoBadgeCountdown(seconds);
+    }
+
+    badge.innerHTML = seconds;
+    badge.title = `Cambiando en ${seconds}s — Click para cancelar`;
+    badge.style.fontSize = '18px';
+    badge.style.fontWeight = 'bold';
+    badge.style.background = '#e67e22';
+    badge.style.animation = 'zap-countdown-pulse 0.5s ease-in-out';
+
+    // Add keyframes if not present
+    if (!document.getElementById('zap-countdown-kf')) {
+        const kf = document.createElement('style');
+        kf.id = 'zap-countdown-kf';
+        kf.textContent = `
+            @keyframes zap-countdown-pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.18); }
+            }
+        `;
+        document.head.appendChild(kf);
+    }
+
+    // Remove pulse after first iteration so it's subtle
+    setTimeout(() => {
+        if (badge && badge.style.animation === 'zap-countdown-pulse 0.5s ease-in-out') {
+            badge.style.animation = '';
+        }
+    }, 500);
+}
+
+// ============ AUTO-SCROLL CUSTOM SHORTCUT LISTENER ============
+let _autoShortcutHandler = null;
+
+function setupAutoShortcutListener() {
+    removeAutoShortcutListener();
+    const hostname = window.location.hostname;
+    const cfg = _autoConfig[hostname];
+    if (!cfg || !cfg.autoShortcut) return;
+
+    const sc = cfg.autoShortcut;
+    if (!sc.key) return;
+
+    _autoShortcutHandler = function(e) {
+        // Don't fire in inputs
+        if (document.activeElement) {
+            const tag = document.activeElement.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' ||
+                document.activeElement.isContentEditable) {
+                return;
+            }
+        }
+        // Don't fire when keybind prompt is open
+        if (_capturingKeybind) return;
+
+        const ctrlOk = sc.ctrlKey ? e.ctrlKey : !e.ctrlKey;
+        const altOk = sc.altKey ? e.altKey : !e.altKey;
+        const shiftOk = sc.shiftKey ? e.shiftKey : !e.shiftKey;
+        const metaOk = sc.metaKey ? e.metaKey : !e.metaKey;
+        const keyOk = e.key === sc.key;
+
+        if (ctrlOk && altOk && shiftOk && metaOk && keyOk) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleAutoScroll();
+        }
+    };
+
+    document.addEventListener('keydown', _autoShortcutHandler, true);
+}
+
+function removeAutoShortcutListener() {
+    if (_autoShortcutHandler) {
+        document.removeEventListener('keydown', _autoShortcutHandler, true);
+        _autoShortcutHandler = null;
+    }
+}
 chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace !== 'local') return;
 
@@ -1005,3 +1367,4 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
 // ============ INIT ============
 loadRules();
 loadKeybinds();
+loadAutoConfig();

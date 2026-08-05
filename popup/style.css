@@ -347,3 +347,126 @@ details li:last-child {
   padding: 6px 18px;
   font-size: 0.85rem;
 }
+
+/* ============ AUTO MODE ============ */
+.auto-section {
+  max-height: none;
+  overflow-y: visible;
+}
+
+.auto-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auto-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auto-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #555;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.auto-select {
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  background: white;
+  color: #333;
+}
+
+.auto-input {
+  width: 50px;
+  padding: 4px 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.auto-shortcut-btn {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px dashed #bbb;
+  border-radius: 4px;
+  background: #fafafa;
+  color: #666;
+  cursor: pointer;
+  font-size: 0.7rem;
+  text-align: center;
+  white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  min-width: 0;
+}
+
+.auto-shortcut-btn:hover {
+  background: #f0e6f6;
+  border-color: #8e44ad;
+  color: #8e44ad;
+}
+
+.auto-shortcut-btn.capturing {
+  background: #fff3cd;
+  border-color: #f39c12;
+  border-style: solid;
+  color: #856404;
+  animation: pulse-border 0.8s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: #f39c12; }
+  50% { border-color: #e67e22; }
+}
+
+.auto-buttons {
+  margin-top: 4px;
+  gap: 6px;
+}
+
+.btn-auto-play {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 5px;
+  background: #8e44ad;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+}
+
+.btn-auto-play:hover {
+  background: #7d3c98;
+}
+
+.btn-auto-play.active {
+  background: #6c3483;
+  box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px #8e44ad;
+}
+
+.btn-auto-stop {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  background: #c0392b;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+  display: none;
+}
+
+.btn-auto-stop:hover {
+  background: #a93226;
+}
