@@ -64,6 +64,61 @@ Automatically detects series and chapter from the page URL or title, so you alwa
 
 ---
 
+## 📘 How to Use
+
+### ⚡ Zap Mode — Remove elements
+
+1. Open the popup and click **⚡ Zap Mode** (or right-click the extension icon → *"Activar Zap Mode"*)
+2. Hover over any element on the page — it highlights in red
+3. **Click** the element to remove it
+4. An "Elemento eliminado — Deshacer" toast appears for 5 seconds
+5. The element stays hidden every time you visit that domain
+6. Press **Escape** to cancel Zap Mode
+
+> **Tip:** You can pause all zaps for a domain from the popup (⏸️ button). Useful when a page layout changes or you need to see something you hid.
+
+### ⌨️ Key Bind Mode — Click buttons with keys
+
+1. Open the popup and click **⌨️ Key Bind** (or right-click the extension icon → *"Asignar tecla"*)
+2. **Click** any button or link on the page (e.g., *"Siguiente"* / *"Next"*)
+3. A blue overlay appears: *"Pulse una tecla para asignar..."*
+4. **Press a key** (e.g., `→` right arrow, `N`, `F2`)
+5. Done! From now on, pressing that key clicks the button for you
+6. Hold **Escape** for 1 second to delete the keybind for the current element
+
+> **Tip:** Keybinds are shown as badges in the popup → easy to remember what's assigned. They don't fire while you're typing in text fields.
+
+### 🤖 Auto Mode — Hands-free comic reading
+
+1. Open the popup → switch to the **🤖 Auto** tab
+2. Configure your settings:
+   - **Velocidad** — 5 levels from 🐢 Lento to 💨 Rápido
+   - **Espera (s)** — How long to wait at the page bottom (0.5–10s)
+   - **Tecla Siguiente** — The keybind that clicks your "Next" button
+   - **Atajo** — Keyboard shortcut to toggle auto-scroll (e.g., `Ctrl+Shift+A`)
+3. Click **▶ Iniciar** (or press your configured shortcut)
+4. The page auto-scrolls. When it reaches the bottom, a **countdown badge** (⏳) appears
+5. After the countdown, the extension auto-clicks the "Next" button
+6. On the new page, auto-scroll **resumes automatically** 🔄
+7. Click **■ Parar** (or the countdown badge itself) to stop
+
+> **Tip:** The badge is clickable! Click it while counting down to cancel the auto-advance and stop.
+
+### 📖 Reading History — Track your progress
+
+This one is **fully automatic** — no setup needed!
+
+1. Browse any comic/manga site normally
+2. The extension detects the **series name** and **chapter number** from the page
+3. Open the popup → **📖 Historial** tab to see your reading history
+4. Entries are **grouped by domain** (click to expand/collapse)
+5. **Click any entry** to jump directly to that chapter
+6. Use **✕** to delete a single entry or **🗑️** to wipe an entire domain
+
+> **How it detects:** The parser checks `<meta og:title>` → `<h1>` → page `<title>` → URL, looking for patterns like *"Series Name Capítulo 42"*, *"Series Ch. 142"*, or *"series-chapter-99"*. It also handles compound slugs like manhwaweb (`series_timestamp-chapter_page`).
+
+---
+
 ## 🚀 Install
 
 ### From source (developer mode)
