@@ -17,6 +17,7 @@
       <button class="tab-btn active" data-tab="zap">⚡ Zap &amp; Key</button>
       <button class="tab-btn" data-tab="auto">🤖 Auto</button>
       <button class="tab-btn" data-tab="history">📖 Historial</button>
+      <button class="tab-btn" data-tab="help">ℹ️ Ayuda</button>
     </nav>
 
     <!-- ===== TAB: ZAP & KEY ===== -->
@@ -95,6 +96,80 @@
           <!-- Dynamic list: grouped by domain -->
         </div>
         <div id="historyEmptyState" class="empty-state">Navega a un cómic o manga para empezar el historial.</div>
+      </div>
+    </div>
+
+    <!-- ===== TAB: AYUDA ===== -->
+    <div class="tab-content" id="tab-help">
+      <div class="help-section">
+        <details open>
+          <summary>⚡ Zap Mode — Borrar elementos</summary>
+          <ol>
+            <li>Abre el popup y pulsa <strong>⚡ Zap Mode</strong></li>
+            <li>Pasa el ratón sobre cualquier elemento — se resalta en rojo</li>
+            <li><strong>Click</strong> para eliminarlo</li>
+            <li>Aparece un toast «Deshacer» durante 5 segundos</li>
+            <li>El elemento se oculta <strong>para siempre</strong> en ese dominio</li>
+            <li>Pulsa <strong>Escape</strong> para cancelar</li>
+          </ol>
+          <p class="help-tip">💡 Puedes pausar reglas por dominio con ⏸️ sin borrarlas.</p>
+        </details>
+
+        <details>
+          <summary>⌨️ Key Bind — Clics con teclas</summary>
+          <ol>
+            <li>Abre el popup y pulsa <strong>⌨️ Key Bind</strong></li>
+            <li><strong>Click</strong> en cualquier botón/enlace (ej: "Siguiente")</li>
+            <li>Superposición azul: <em>"Pulse una tecla para asignar..."</em></li>
+            <li><strong>Pulsa una tecla</strong> (ej: <code>→</code>, <code>N</code>, <code>F2</code>)</li>
+            <li>¡Listo! Esa tecla ahora hace clic en el botón</li>
+            <li>Mantén <strong>Escape 1 segundo</strong> sobre un elemento para borrar su atajo</li>
+          </ol>
+          <p class="help-tip">💡 Los atajos no se disparan mientras escribes en campos de texto.</p>
+        </details>
+
+        <details>
+          <summary>🤖 Auto Mode — Lectura sin manos</summary>
+          <ol>
+            <li>Ve a la pestaña <strong>🤖 Auto</strong></li>
+            <li>Configura:
+              <ul>
+                <li><strong>Velocidad</strong> — 5 niveles (🐢 a 💨)</li>
+                <li><strong>Espera</strong> — segundos abajo antes de avanzar</li>
+                <li><strong>Tecla Siguiente</strong> — el keybind que pulsa "Next"</li>
+                <li><strong>Atajo</strong> — combinación para activar/parar (ej: Ctrl+Shift+A)</li>
+              </ul>
+            </li>
+            <li>Pulsa <strong>▶ Iniciar</strong></li>
+            <li>La página hace auto-scroll. Al llegar abajo, un badge ⏳ muestra la cuenta atrás</li>
+            <li>El badge hace clic en "Siguiente" y el scroll <strong>se reanuda solo</strong> 🔄</li>
+            <li>Pulsa <strong>■ Parar</strong> o haz click en el badge para detener</li>
+          </ol>
+          <p class="help-tip">💡 Necesitas un keybind asignado al botón "Next" para que funcione el auto-avance.</p>
+        </details>
+
+        <details>
+          <summary>📖 Historial — Seguimiento de lectura</summary>
+          <ol>
+            <li><strong>Automático</strong> — no requiere configuración</li>
+            <li>Navega por cualquier sitio de cómics/manga con normalidad</li>
+            <li>La extensión detecta <strong>serie</strong> y <strong>capítulo</strong> del título y la URL</li>
+            <li>Ve a <strong>📖 Historial</strong> para ver tu progreso</li>
+            <li>Agrupado por dominio (click para expandir/colapsar)</li>
+            <li><strong>Click</strong> en cualquier entrada → abre esa página</li>
+            <li>Usa <strong>✕</strong> para borrar una entrada o <strong>🗑️</strong> para limpiar un dominio</li>
+          </ol>
+          <p class="help-tip">💡 Soporta español e inglés: "Capítulo", "Chapter", "Ch.", "Episodio", "Ep.", etc.</p>
+        </details>
+
+        <details>
+          <summary>⌨️ Atajos de teclado globales</summary>
+          <table class="help-table">
+            <tr><td><kbd>Escape</kbd></td><td>Cancelar cualquier modo activo</td></tr>
+            <tr><td><kbd>Personalizado</kbd></td><td>Activar/Parar Auto-Scroll (configurable por dominio)</td></tr>
+            <tr><td><kbd>Tus teclas</kbd></td><td>Disparar botones asignados con Key Bind</td></tr>
+          </table>
+        </details>
       </div>
     </div>
   </div>

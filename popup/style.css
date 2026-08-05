@@ -591,3 +591,126 @@ details li:last-child {
   flex-shrink: 0;
   margin-left: 4px;
 }
+
+/* ============ HELP TAB ============ */
+.help-section {
+  background: white;
+  padding: 8px;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  max-height: 420px;
+  overflow-y: auto;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.help-section details {
+  border-bottom: 1px solid #eee;
+  padding: 6px 0;
+  margin: 0;
+}
+
+.help-section details:last-child {
+  border-bottom: none;
+}
+
+.help-section summary {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #2c3e50;
+  padding: 4px 6px;
+  background: #f8f8fc;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.help-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.help-section summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 6px;
+  font-size: 0.65rem;
+  transition: transform 0.15s;
+  color: #8e44ad;
+}
+
+.help-section details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.help-section summary:hover {
+  background: #f0e6f6;
+}
+
+.help-section ol,
+.help-section ul {
+  margin: 6px 0 6px 12px;
+  padding: 0;
+  list-style-position: outside;
+}
+
+.help-section ol {
+  padding-left: 18px;
+}
+
+.help-section ul {
+  padding-left: 16px;
+}
+
+.help-section li {
+  padding: 1px 0;
+  border-bottom: none;
+  font-size: 0.76rem;
+  color: #444;
+  display: list-item;
+}
+
+.help-section code {
+  background: #f0e6f6;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.73rem;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: #8e44ad;
+}
+
+.help-section kbd {
+  background: #e8e8ee;
+  border: 1px solid #ccc;
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 0.72rem;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: #333;
+}
+
+.help-tip {
+  margin: 4px 0 2px 22px;
+  font-size: 0.73rem;
+  color: #888;
+  font-style: italic;
+}
+
+.help-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4px 0;
+  font-size: 0.76rem;
+}
+
+.help-table td {
+  padding: 3px 8px;
+  border-bottom: 1px dotted #eee;
+}
+
+.help-table td:first-child {
+  white-space: nowrap;
+  width: 100px;
+}

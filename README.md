@@ -135,12 +135,12 @@ This one is **fully automatic** — no setup needed!
 
 ## 🧭 Popup layout
 
-The popup has **3 tabs** for better organization:
+The popup has **4 tabs** for better organization:
 
 ```
 ┌──────────────────────────────────────┐
 │          ⚡ Zap & Key ⌨️             │
-│  [⚡ Zap & Key] [🤖 Auto] [📖 Hist]  │
+│  [⚡ Zap & Key] [🤖 Auto] [📖 Hist] [ℹ️ Ayuda] │
 ├──────────────────────────────────────┤
 │                                      │
 │  TAB 1 — Zap & Key (default)         │
@@ -173,6 +173,15 @@ The popup has **3 tabs** for better organization:
 │  │   Solo Leveling [Cap.142] ayer │  │
 │  │ ▸ manhwaweb.com (1)            │  │
 │  │   Manual Supervivencia [Cap.4] │  │
+│  └────────────────────────────────┘  │
+│                                      │
+│  TAB 4 — Ayuda                       │
+│  ┌────────────────────────────────┐  │
+│  │ ▸ ⚡ Zap Mode — Borrar...      │  │
+│  │ ▸ ⌨️ Key Bind — Clics...      │  │
+│  │ ▸ 🤖 Auto Mode — Lectura...   │  │
+│  │ ▸ 📖 Historial — Seguim...    │  │
+│  │ ▸ ⌨️ Atajos de teclado       │  │
 │  └────────────────────────────────┘  │
 └──────────────────────────────────────┘
 ```
