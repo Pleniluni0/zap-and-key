@@ -1489,6 +1489,27 @@ function detectSeriesChapter() {
                 }
             }
         }
+
+        // 4c: Compound slug with embedded chapter
+        // Pattern: {series-slug}_{timestamp/id}-{chapter}_{page}
+        // Example: manual-de-supervivencia-del-caballero-errante_1764099864590-4_01
+        if (!candidates.some(c => c.source === 'url-explicit' || c.source === 'url-plain')) {
+            const lastSeg = decodeURIComponent(segments[segments.length - 1]);
+            // Match: ..._BIG_NUMBER-CHAPTER_PAGE  or  ..._BIG_NUMBER-CHAPTER
+            const compoundMatch = lastSeg.match(/^(.+?)_(\d{10,})-(\d{1,4})(?:_(\d{1,3}))?$/);
+            if (compoundMatch) {
+                const seriesSlug = compoundMatch[1];
+                const chapterNum = parseFloat(compoundMatch[3]);
+                if (chapterNum >= 1 && chapterNum <= 9999 && !GENERIC_SLUGS.test(seriesSlug.replace(/[-_]/g, ' ').trim())) {
+                    candidates.push({
+                        series: humanizeSlug(seriesSlug),
+                        chapterNumber: chapterNum,
+                        source: 'url-compound',
+                        weight: 4
+                    });
+                }
+            }
+        }
     } catch (_) { /* URL parse error — continue */ }
 
     // ── Pick the best candidate ──

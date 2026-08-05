@@ -23,6 +23,30 @@ document.addEventListener('DOMContentLoaded', () => {
     let pendingConfirm = null;   // { hostname } for domain-delete modal
     let currentHostname = '';
 
+    // ============ TAB SWITCHING ============
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetTab = btn.dataset.tab;
+
+            // Update active button
+            tabBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Show/hide tab content
+            tabContents.forEach(tc => tc.classList.remove('active'));
+            const targetContent = document.getElementById('tab-' + targetTab);
+            if (targetContent) targetContent.classList.add('active');
+
+            // Lazy-load history when switching to its tab
+            if (targetTab === 'history') {
+                loadHistory();
+            }
+        });
+    });
+
     // ============ QUERY CONTENT SCRIPT STATUS ============
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs.length === 0) return;
@@ -128,7 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
             allRules = items;
             renderZapRules();
             renderKeybinds();
-            loadHistory();
 
             // Query active zap count for current tab
             if (currentHostname) {
@@ -708,54 +731,116 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         historyEmptyState.style.display = 'none';
 
+        // Group by domain
+        const byDomain = {};
         entries.forEach(([slug, entry]) => {
-            const item = document.createElement('div');
-            item.className = 'history-item';
+            const dom = entry.domain;
+            if (!byDomain[dom]) byDomain[dom] = [];
+            byDomain[dom].push({ slug, entry });
+        });
 
-            const info = document.createElement('div');
-            info.className = 'history-info';
+        // Sort domains by most recent entry
+        const domainOrder = Object.keys(byDomain).sort((a, b) => {
+            const latestA = Math.max(...byDomain[a].map(e => e.entry.timestamp));
+            const latestB = Math.max(...byDomain[b].map(e => e.entry.timestamp));
+            return latestB - latestA;
+        });
 
-            const seriesName = document.createElement('span');
-            seriesName.className = 'history-series';
-            seriesName.textContent = entry.series;
-            seriesName.title = entry.series;
+        domainOrder.forEach(domain => {
+            const domainEntries = byDomain[domain];
+            const isCurrent = domain === currentHostname;
 
-            const chapter = document.createElement('span');
-            chapter.className = 'history-chapter';
-            chapter.textContent = entry.chapterLabel || `Cap. ${entry.chapterNumber}`;
+            const details = document.createElement('details');
+            details.className = 'history-domain-group';
+            details.open = isCurrent || domainOrder.length === 1;
 
-            const domain = document.createElement('span');
-            domain.className = 'history-domain';
-            domain.textContent = entry.domain;
+            const summary = document.createElement('summary');
+            const domainHeader = document.createElement('div');
+            domainHeader.className = 'domain-header';
 
-            const timeAgo = document.createElement('span');
-            timeAgo.className = 'history-time';
-            timeAgo.textContent = formatTimeAgo(entry.timestamp);
-            timeAgo.title = new Date(entry.timestamp).toLocaleString();
+            const domainName = document.createElement('span');
+            domainName.className = 'domain-name';
+            domainName.textContent = `${domain} (${domainEntries.length})`;
+            if (isCurrent) domainName.textContent += ' ← actual';
 
-            info.appendChild(seriesName);
-            info.appendChild(chapter);
-            info.appendChild(domain);
-            info.appendChild(timeAgo);
-
-            // Click to navigate
-            item.addEventListener('click', () => {
-                chrome.tabs.create({ url: entry.url, active: true });
-            });
-
-            // Delete button
-            const delBtn = document.createElement('button');
-            delBtn.className = 'delete-btn history-del';
-            delBtn.innerHTML = '✕';
-            delBtn.title = 'Eliminar del historial';
-            delBtn.addEventListener('click', (e) => {
+            // Delete all history for this domain
+            const deleteDomainBtn = document.createElement('button');
+            deleteDomainBtn.className = 'delete-domain-btn';
+            deleteDomainBtn.innerHTML = '🗑️';
+            deleteDomainBtn.title = `Eliminar todo el historial de ${domain}`;
+            deleteDomainBtn.addEventListener('click', (e) => {
+                e.preventDefault();
                 e.stopPropagation();
-                deleteHistoryEntry(slug);
+                deleteHistoryDomain(domain);
             });
 
-            item.appendChild(info);
-            item.appendChild(delBtn);
-            historyList.appendChild(item);
+            domainHeader.appendChild(domainName);
+            domainHeader.appendChild(deleteDomainBtn);
+            summary.appendChild(domainHeader);
+            details.appendChild(summary);
+
+            // Series entries under this domain
+            const ul = document.createElement('ul');
+            domainEntries.forEach(({ slug, entry }) => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+
+                const info = document.createElement('div');
+                info.className = 'history-info';
+
+                const seriesName = document.createElement('span');
+                seriesName.className = 'history-series';
+                seriesName.textContent = entry.series;
+                seriesName.title = entry.series;
+
+                const chapter = document.createElement('span');
+                chapter.className = 'history-chapter';
+                chapter.textContent = entry.chapterLabel || `Cap. ${entry.chapterNumber}`;
+
+                const timeAgo = document.createElement('span');
+                timeAgo.className = 'history-time';
+                timeAgo.textContent = formatTimeAgo(entry.timestamp);
+                timeAgo.title = new Date(entry.timestamp).toLocaleString();
+
+                info.appendChild(seriesName);
+                info.appendChild(chapter);
+                info.appendChild(timeAgo);
+
+                // Click to navigate
+                li.addEventListener('click', (e) => {
+                    // Don't navigate if clicking delete button
+                    if (e.target.closest('.delete-btn')) return;
+                    chrome.tabs.create({ url: entry.url, active: true });
+                });
+
+                // Delete button
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-btn history-del';
+                delBtn.innerHTML = '✕';
+                delBtn.title = 'Eliminar del historial';
+                delBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteHistoryEntry(slug);
+                });
+
+                li.appendChild(info);
+                li.appendChild(delBtn);
+                ul.appendChild(li);
+            });
+
+            details.appendChild(ul);
+            historyList.appendChild(details);
+        });
+    }
+
+    function deleteHistoryDomain(domain) {
+        for (const slug of Object.keys(allHistory)) {
+            if (allHistory[slug].domain === domain) {
+                delete allHistory[slug];
+            }
+        }
+        chrome.storage.local.set({ zap_reading_history: allHistory }, () => {
+            renderHistory();
         });
     }
 

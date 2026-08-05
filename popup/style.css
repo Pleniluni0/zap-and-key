@@ -1,5 +1,5 @@
 body {
-  width: 340px;
+  width: 360px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   padding: 10px;
   margin: 0;
@@ -10,21 +10,66 @@ body {
 .container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 h1 {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   margin: 0;
   text-align: center;
   color: #2c3e50;
 }
 
 h2 {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   margin: 0 0 5px 0;
   border-bottom: 2px solid #ddd;
   padding-bottom: 4px;
+}
+
+/* ============ TAB BAR ============ */
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  background: #e8e8ee;
+  border-radius: 6px;
+  padding: 3px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 7px 4px;
+  border: none;
+  background: transparent;
+  color: #666;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  background: #ddd;
+  color: #333;
+}
+
+.tab-btn.active {
+  background: #fff;
+  color: #2c3e50;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* ============ TAB CONTENT ============ */
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* ============ CONTROLS (mode buttons) ============ */
@@ -473,19 +518,29 @@ details li:last-child {
 
 /* ============ READING HISTORY ============ */
 .history-section {
-  max-height: 180px;
+  max-height: 380px;
   overflow-y: auto;
+}
+
+.history-domain-group {
+  border-bottom: 1px solid #eee;
+  padding: 2px 0;
+}
+
+.history-domain-group:last-child {
+  border-bottom: none;
 }
 
 .history-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 4px;
-  border-bottom: 1px solid #eee;
+  padding: 5px 4px;
+  border-bottom: 1px dotted #eee;
   cursor: pointer;
   transition: background 0.15s;
   border-radius: 4px;
+  font-size: 0.8rem;
 }
 
 .history-item:hover {
@@ -507,35 +562,26 @@ details li:last-child {
 
 .history-series {
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: #2c3e50;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 150px;
+  max-width: 160px;
 }
 
 .history-chapter {
   background: #8e44ad;
   color: #fff;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
   padding: 1px 7px;
   border-radius: 10px;
   white-space: nowrap;
 }
 
-.history-domain {
-  font-size: 0.7rem;
-  color: #999;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 80px;
-}
-
 .history-time {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   color: #aaa;
   white-space: nowrap;
   margin-left: auto;

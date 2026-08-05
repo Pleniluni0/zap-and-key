@@ -12,76 +12,90 @@
   <div class="container">
     <h1>⚡ Zap &amp; Key ⌨️</h1>
 
-    <!-- ===== MODE CONTROLS ===== -->
-    <div class="controls">
-      <button id="toggleZap" class="btn btn-zap">Activar Zap Mode</button>
-      <button id="toggleKeybind" class="btn btn-keybind">Activar Key Bind Mode</button>
-    </div>
+    <!-- ===== TAB BAR ===== -->
+    <nav class="tab-bar">
+      <button class="tab-btn active" data-tab="zap">⚡ Zap &amp; Key</button>
+      <button class="tab-btn" data-tab="auto">🤖 Auto</button>
+      <button class="tab-btn" data-tab="history">📖 Historial</button>
+    </nav>
 
-    <!-- ===== ZAP RULES ===== -->
-    <div class="rules-section">
-      <h2>🗑️ Elementos Bloqueados</h2>
-      <div id="rulesList" class="rules-container">
-        <!-- Dynamic list -->
+    <!-- ===== TAB: ZAP & KEY ===== -->
+    <div class="tab-content active" id="tab-zap">
+      <!-- MODE CONTROLS -->
+      <div class="controls">
+        <button id="toggleZap" class="btn btn-zap">Activar Zap Mode</button>
+        <button id="toggleKeybind" class="btn btn-keybind">Activar Key Bind Mode</button>
       </div>
-      <div id="zapEmptyState" class="empty-state">No hay reglas todavía.</div>
-    </div>
 
-    <!-- ===== KEYBINDS ===== -->
-    <div class="rules-section keybinds-section">
-      <h2>⌨️ Atajos de Tecla</h2>
-      <div id="keybindsList" class="rules-container">
-        <!-- Dynamic list -->
+      <!-- ZAP RULES -->
+      <div class="rules-section">
+        <h2>🗑️ Elementos Bloqueados</h2>
+        <div id="rulesList" class="rules-container">
+          <!-- Dynamic list -->
+        </div>
+        <div id="zapEmptyState" class="empty-state">No hay reglas todavía.</div>
       </div>
-      <div id="keybindsEmptyState" class="empty-state">No hay atajos de tecla todav&iacute;a.</div>
-    </div>
 
-    <!-- ===== AUTO MODE ===== -->
-    <div class="rules-section auto-section">
-      <h2>🤖 Modo Autom&aacute;tico</h2>
-      <div class="auto-controls">
-        <div class="auto-row">
-          <label class="auto-label">Velocidad</label>
-          <select id="autoSpeed" class="auto-select">
-            <option value="slow">🐢 Lento</option>
-            <option value="slowMedium">🐌 Suave</option>
-            <option value="medium" selected>🚶 Medio</option>
-            <option value="mediumFast">🚀 &Aacute;gil</option>
-            <option value="fast">💨 R&aacute;pido</option>
-          </select>
+      <!-- KEYBINDS -->
+      <div class="rules-section keybinds-section">
+        <h2>⌨️ Atajos de Tecla</h2>
+        <div id="keybindsList" class="rules-container">
+          <!-- Dynamic list -->
         </div>
-        <div class="auto-row">
-          <label class="auto-label">Espera (s)</label>
-          <input type="number" id="autoWait" class="auto-input" value="2" min="0.5" max="10" step="0.5">
-          <button id="autoShortcutBtn" class="auto-shortcut-btn" title="Click para grabar atajo de teclado">Atajo: Ninguno</button>
-        </div>
-        <div class="auto-row">
-          <label class="auto-label">Tecla Siguiente</label>
-          <select id="autoNextKey" class="auto-select">
-            <option value="">-- Sin keybind --</option>
-          </select>
-        </div>
-        <div class="auto-row auto-buttons">
-          <button id="autoPlay" class="btn btn-auto-play">▶ Iniciar</button>
-          <button id="autoStop" class="btn btn-auto-stop">■ Parar</button>
-        </div>
+        <div id="keybindsEmptyState" class="empty-state">No hay atajos de tecla todavía.</div>
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="actions-section">
+        <button id="exportBtn" class="action-btn" title="Exportar reglas a JSON">📤 Exportar</button>
+        <button id="importBtn" class="action-btn" title="Importar reglas desde JSON">📥 Importar</button>
+        <input type="file" id="importFile" accept=".json" style="display:none">
       </div>
     </div>
 
-    <!-- ===== READING HISTORY ===== -->
-    <div class="rules-section history-section">
-      <h2>📖 Historial de Lectura</h2>
-      <div id="historyList" class="rules-container">
-        <!-- Dynamic list -->
+    <!-- ===== TAB: AUTO ===== -->
+    <div class="tab-content" id="tab-auto">
+      <div class="rules-section auto-section">
+        <h2>🤖 Modo Automático</h2>
+        <div class="auto-controls">
+          <div class="auto-row">
+            <label class="auto-label">Velocidad</label>
+            <select id="autoSpeed" class="auto-select">
+              <option value="slow">🐢 Lento</option>
+              <option value="slowMedium">🐌 Suave</option>
+              <option value="medium" selected>🚶 Medio</option>
+              <option value="mediumFast">🚀 Ágil</option>
+              <option value="fast">💨 Rápido</option>
+            </select>
+          </div>
+          <div class="auto-row">
+            <label class="auto-label">Espera (s)</label>
+            <input type="number" id="autoWait" class="auto-input" value="2" min="0.5" max="10" step="0.5">
+            <button id="autoShortcutBtn" class="auto-shortcut-btn" title="Click para grabar atajo de teclado">Atajo: Ninguno</button>
+          </div>
+          <div class="auto-row">
+            <label class="auto-label">Tecla Siguiente</label>
+            <select id="autoNextKey" class="auto-select">
+              <option value="">-- Sin keybind --</option>
+            </select>
+          </div>
+          <div class="auto-row auto-buttons">
+            <button id="autoPlay" class="btn btn-auto-play">▶ Iniciar</button>
+            <button id="autoStop" class="btn btn-auto-stop">■ Parar</button>
+          </div>
+        </div>
       </div>
-      <div id="historyEmptyState" class="empty-state">Navega a un c&oacute;mic o manga para empezar el historial.</div>
     </div>
 
-    <!-- ===== ACTIONS ===== -->
-    <div class="actions-section">
-      <button id="exportBtn" class="action-btn" title="Exportar reglas a JSON">📤 Exportar</button>
-      <button id="importBtn" class="action-btn" title="Importar reglas desde JSON">📥 Importar</button>
-      <input type="file" id="importFile" accept=".json" style="display:none">
+    <!-- ===== TAB: HISTORIAL ===== -->
+    <div class="tab-content" id="tab-history">
+      <div class="rules-section history-section">
+        <h2>📖 Historial de Lectura</h2>
+        <div id="historyList" class="rules-container">
+          <!-- Dynamic list: grouped by domain -->
+        </div>
+        <div id="historyEmptyState" class="empty-state">Navega a un cómic o manga para empezar el historial.</div>
+      </div>
     </div>
   </div>
 

@@ -52,11 +52,13 @@ Automatically detects series and chapter from the page URL or title, so you alwa
 
 | Feature | Detail |
 |---------|--------|
-| 🧠 Smart detection | Parses URL patterns (`/manga/one-piece/capitulo-42`) and page titles |
+| 🧠 Smart detection | Parses URL patterns + `<meta og:title>` + `<h1>` + `<title>` |
+| 🔗 Compound slugs | Supports `{series}_{timestamp}-{ch}_{page}` format (manhwaweb, etc.) |
 | 🌐 Multi-site | Works on any comic/manga site (Spanish, English, Japanese) |
 | 📊 Per-series tracking | Tracks each series independently, even on the same domain |
-| 🖱️ One-click resume | Click any entry in the popup to jump straight to your last chapter |
-| 🗑️ Manageable | Delete individual entries from the history |
+| 📁 Grouped by domain | History entries are grouped and collapsible by domain in its own tab |
+| 🖱️ One-click resume | Click any entry to jump straight to your last chapter |
+| 🗑️ Manageable | Delete individual entries or wipe an entire domain at once |
 | ⏱️ Timestamps | Shows "hace 5m", "hace 2h", "ayer", "hace 3d", etc. |
 | 💾 LRU capped | Keeps the latest 100 entries |
 
@@ -78,35 +80,46 @@ Automatically detects series and chapter from the page URL or title, so you alwa
 
 ## 🧭 Popup layout
 
+The popup has **3 tabs** for better organization:
+
 ```
-┌──────────────────────────────────┐
-│       ⚡ Zap & Key ⌨️            │
-│                                  │
-│  [⚡ Zap Mode]  [⌨️ Key Bind]   │
-│                                  │
-│  🗑️ Elementos Bloqueados        │
-│  ▸ example.com (5 guardados /     │
-│    3 activos)  [⏸️] [🗑️]       │
-│                                  │
-│  ⌨️ Atajos de Tecla             │
-│  ▸ example.com (2 atajos)        │
-│    [→] Botón: Siguiente   [✕]   │
-│    [↵] Botón: Enviar      [✕]   │
-│                                  │
-│  🤖 Modo Automático             │
-│  Velocidad: [🐢🐌🚶🚀💨]        │
-│  Espera (s): [2] [Atajo: ...]   │
-│  Tecla Sig.: [→ → Siguiente]    │
-│  [▶ Iniciar]  [■ Parar]         │
-│                                  │
-│  📖 Historial de Lectura         │
-│  ▸ One Piece  [Capítulo 1088]   │
-│    tusmangas.com · hace 2h   [✕]│
-│  ▸ Solo Leveling [Capítulo 142] │
-│    lectormanga.com · ayer    [✕]│
-│                                  │
-│  [📤 Exportar] [📥 Importar]    │
-└──────────────────────────────────┘
+┌──────────────────────────────────────┐
+│          ⚡ Zap & Key ⌨️             │
+│  [⚡ Zap & Key] [🤖 Auto] [📖 Hist]  │
+├──────────────────────────────────────┤
+│                                      │
+│  TAB 1 — Zap & Key (default)         │
+│  ┌────────────────────────────────┐  │
+│  │ [⚡ Zap Mode]  [⌨️ Key Bind]   │  │
+│  │                                │  │
+│  │ 🗑️ Elementos Bloqueados       │  │
+│  │ ▸ example.com (5 guardados)    │  │
+│  │   [⏸️] [🗑️]                   │  │
+│  │                                │  │
+│  │ ⌨️ Atajos de Tecla            │  │
+│  │ ▸ example.com (2 atajos)       │  │
+│  │   [→] Siguiente         [✕]   │  │
+│  │                                │  │
+│  │ [📤 Exportar] [📥 Importar]    │  │
+│  └────────────────────────────────┘  │
+│                                      │
+│  TAB 2 — Auto                        │
+│  ┌────────────────────────────────┐  │
+│  │ Velocidad: [🐢🐌🚶🚀💨]        │  │
+│  │ Espera (s): [2] [Atajo: ...]   │  │
+│  │ Tecla Sig.: [→ Siguiente]      │  │
+│  │ [▶ Iniciar]  [■ Parar]         │  │
+│  └────────────────────────────────┘  │
+│                                      │
+│  TAB 3 — Historial                   │
+│  ┌────────────────────────────────┐  │
+│  │ ▸ tusmangas.com (2) ← actual   │  │
+│  │   One Piece [Cap.1088] hace 2h │  │
+│  │   Solo Leveling [Cap.142] ayer │  │
+│  │ ▸ manhwaweb.com (1)            │  │
+│  │   Manual Supervivencia [Cap.4] │  │
+│  └────────────────────────────────┘  │
+└──────────────────────────────────────┘
 ```
 
 ---
