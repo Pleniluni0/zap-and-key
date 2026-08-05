@@ -470,3 +470,78 @@ details li:last-child {
 .btn-auto-stop:hover {
   background: #a93226;
 }
+
+/* ============ READING HISTORY ============ */
+.history-section {
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-radius: 4px;
+}
+
+.history-item:hover {
+  background: #f0e6f6;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.history-series {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: #2c3e50;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+}
+
+.history-chapter {
+  background: #8e44ad;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.history-domain {
+  font-size: 0.7rem;
+  color: #999;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 80px;
+}
+
+.history-time {
+  font-size: 0.7rem;
+  color: #aaa;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.history-del {
+  flex-shrink: 0;
+  margin-left: 4px;
+}

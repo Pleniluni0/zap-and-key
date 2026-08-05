@@ -128,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
             allRules = items;
             renderZapRules();
             renderKeybinds();
+            loadHistory();
 
             // Query active zap count for current tab
             if (currentHostname) {
@@ -682,6 +683,104 @@ document.addEventListener('DOMContentLoaded', () => {
             closeConfirmModal();
         }
     });
+
+    // ============ READING HISTORY ============
+    const historyList = document.getElementById('historyList');
+    const historyEmptyState = document.getElementById('historyEmptyState');
+
+    let allHistory = {};
+
+    function loadHistory() {
+        chrome.storage.local.get(['zap_reading_history'], (result) => {
+            allHistory = result.zap_reading_history || {};
+            renderHistory();
+        });
+    }
+
+    function renderHistory() {
+        historyList.innerHTML = '';
+        const entries = Object.entries(allHistory)
+            .sort((a, b) => b[1].timestamp - a[1].timestamp);
+
+        if (entries.length === 0) {
+            historyEmptyState.style.display = 'block';
+            return;
+        }
+        historyEmptyState.style.display = 'none';
+
+        entries.forEach(([slug, entry]) => {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+
+            const info = document.createElement('div');
+            info.className = 'history-info';
+
+            const seriesName = document.createElement('span');
+            seriesName.className = 'history-series';
+            seriesName.textContent = entry.series;
+            seriesName.title = entry.series;
+
+            const chapter = document.createElement('span');
+            chapter.className = 'history-chapter';
+            chapter.textContent = entry.chapterLabel || `Cap. ${entry.chapterNumber}`;
+
+            const domain = document.createElement('span');
+            domain.className = 'history-domain';
+            domain.textContent = entry.domain;
+
+            const timeAgo = document.createElement('span');
+            timeAgo.className = 'history-time';
+            timeAgo.textContent = formatTimeAgo(entry.timestamp);
+            timeAgo.title = new Date(entry.timestamp).toLocaleString();
+
+            info.appendChild(seriesName);
+            info.appendChild(chapter);
+            info.appendChild(domain);
+            info.appendChild(timeAgo);
+
+            // Click to navigate
+            item.addEventListener('click', () => {
+                chrome.tabs.create({ url: entry.url, active: true });
+            });
+
+            // Delete button
+            const delBtn = document.createElement('button');
+            delBtn.className = 'delete-btn history-del';
+            delBtn.innerHTML = '✕';
+            delBtn.title = 'Eliminar del historial';
+            delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteHistoryEntry(slug);
+            });
+
+            item.appendChild(info);
+            item.appendChild(delBtn);
+            historyList.appendChild(item);
+        });
+    }
+
+    function deleteHistoryEntry(slug) {
+        delete allHistory[slug];
+        chrome.storage.local.set({ zap_reading_history: allHistory }, () => {
+            renderHistory();
+        });
+    }
+
+    function formatTimeAgo(timestamp) {
+        const now = Date.now();
+        const diff = now - timestamp;
+        const mins = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+
+        if (mins < 1) return 'ahora';
+        if (mins < 60) return `hace ${mins}m`;
+        if (hours < 24) return `hace ${hours}h`;
+        if (days < 7) return `hace ${days}d`;
+        if (days < 30) return `hace ${Math.floor(days / 7)}sem`;
+        const months = Math.floor(days / 30);
+        return `hace ${months}mes`;
+    }
 
     // ============ EXPORT / IMPORT ============
     exportBtn.addEventListener('click', () => {

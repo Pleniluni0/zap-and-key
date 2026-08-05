@@ -47,6 +47,19 @@ Ideal for comics and manga! Auto-scrolls the page at configurable speed, then au
 | ⌨️ Custom shortcut | Configurable keyboard shortcut to toggle auto-scroll (per domain) |
 | 💾 Per-domain config | Speed, wait time, next-key, and shortcut saved per domain |
 
+### 📖 Reading History — Track your progress
+Automatically detects series and chapter from the page URL or title, so you always know where you left off.
+
+| Feature | Detail |
+|---------|--------|
+| 🧠 Smart detection | Parses URL patterns (`/manga/one-piece/capitulo-42`) and page titles |
+| 🌐 Multi-site | Works on any comic/manga site (Spanish, English, Japanese) |
+| 📊 Per-series tracking | Tracks each series independently, even on the same domain |
+| 🖱️ One-click resume | Click any entry in the popup to jump straight to your last chapter |
+| 🗑️ Manageable | Delete individual entries from the history |
+| ⏱️ Timestamps | Shows "hace 5m", "hace 2h", "ayer", "hace 3d", etc. |
+| 💾 LRU capped | Keeps the latest 100 entries |
+
 ---
 
 ## 🚀 Install
@@ -85,6 +98,12 @@ Ideal for comics and manga! Auto-scrolls the page at configurable speed, then au
 │  Espera (s): [2] [Atajo: ...]   │
 │  Tecla Sig.: [→ → Siguiente]    │
 │  [▶ Iniciar]  [■ Parar]         │
+│                                  │
+│  📖 Historial de Lectura         │
+│  ▸ One Piece  [Capítulo 1088]   │
+│    tusmangas.com · hace 2h   [✕]│
+│  ▸ Solo Leveling [Capítulo 142] │
+│    lectormanga.com · ayer    [✕]│
 │                                  │
 │  [📤 Exportar] [📥 Importar]    │
 └──────────────────────────────────┘
@@ -136,6 +155,10 @@ User assigns keybind → showKeybindPrompt() → saveKeybind()
 Auto-scroll start → requestAnimationFrame scroll loop
     → on bottom: countdown badge → click next-button (via keybind selector)
     → auto-resume on next page via loadAutoConfig()
+
+Page load → detectSeriesChapter() → parse URL/title patterns
+    → recordReadingHistory() → zap_reading_history storage
+    → Popup shows 📖 Historial with click-to-resume
 ```
 
 ---
@@ -148,6 +171,7 @@ Auto-scroll start → requestAnimationFrame scroll loop
 | `zap_paused` | `Record<domain, boolean>` | Paused domains |
 | `zap_keybinds` | `Record<domain, Array<{key, selector, label}>>` | Key→element mappings |
 | `zap_auto_config` | `Record<domain, {speed, nextKey, waitMs, enabled, autoShortcut}>` | Auto-scroll settings per domain |
+| `zap_reading_history` | `Record<slug, {series, chapterNumber, chapterLabel, domain, url, timestamp}>` | Reading progress tracker |
 
 ---
 

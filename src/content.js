@@ -1028,6 +1028,8 @@ function loadAutoConfig() {
             console.log('Zap & Key: Auto-scroll resuming for', hostname);
             startAutoScroll(domainConfig.speed, domainConfig.nextKey, domainConfig.waitMs, false);
         }
+        // Track reading history on page load (with or without auto-scroll)
+        trackCurrentPage();
     });
 }
 
@@ -1336,6 +1338,135 @@ function removeAutoShortcutListener() {
         _autoShortcutHandler = null;
     }
 }
+// ============ READING HISTORY TRACKING ============
+function detectSeriesChapter() {
+    const url = window.location.href;
+    const title = document.title || '';
+
+    // ── Strategy 1: Parse URL path segments ──
+    try {
+        const pathname = new URL(url).pathname;
+        const segments = pathname.replace(/\/+$/, '').split('/').filter(Boolean);
+        // Reverse-scan for the chapter pattern
+        for (let i = segments.length - 1; i >= 0; i--) {
+            const seg = decodeURIComponent(segments[i]);
+            const match = seg.match(/(?:capitulo|cap|chapter|ch|c|episodio|ep|episode|volumen|vol)[-_.\s]*(\d+(?:[.,]\d+)?)/i);
+            if (match) {
+                const chapterNum = parseFloat(match[1].replace(',', '.'));
+                // Series name is the segment before, or the first meaningful segment
+                let seriesSeg = (i > 0) ? decodeURIComponent(segments[i - 1]) : '';
+                // If no meaningful series name, use the first segment
+                if (!seriesSeg || /^(manga|comic|series|leer|ver|read|view|chapter|capitulo|catalog|library)/i.test(seriesSeg)) {
+                    seriesSeg = segments.find(s => !/^(manga|comic|series|leer|ver|read|view|chapter|capitulo|catalog|library)/i.test(decodeURIComponent(s))) || segments[0];
+                }
+                return {
+                    series: humanizeSlug(seriesSeg),
+                    chapterNumber: chapterNum,
+                    chapterLabel: `Capítulo ${chapterNum}`,
+                    domain: window.location.hostname,
+                    url: url
+                };
+            }
+        }
+        // Check for a plain numeric last segment
+        const lastSeg = decodeURIComponent(segments[segments.length - 1]);
+        const plainMatch = lastSeg.match(/^(\d+(?:[.,]\d+)?)$/);
+        if (plainMatch && segments.length >= 2) {
+            const chapterNum = parseFloat(plainMatch[1].replace(',', '.'));
+            const seriesSeg = decodeURIComponent(segments[segments.length - 2]);
+            return {
+                series: humanizeSlug(seriesSeg),
+                chapterNumber: chapterNum,
+                chapterLabel: `Capítulo ${chapterNum}`,
+                domain: window.location.hostname,
+                url: url
+            };
+        }
+    } catch (_) { /* URL parse error — continue */ }
+
+    // ── Strategy 2: Parse document title ──
+    const titlePatterns = [
+        /(.+?)\s*[-–—|]\s*(?:cap[ií]tulo|cap\.?|chapter|ch\.?|episodio|ep\.?|episode|volumen|vol\.?)\s*(\d+(?:[.,]\d+)?)/i,
+        /(?:cap[ií]tulo|cap\.?|chapter|ch\.?|episodio|ep\.?|episode|volumen|vol\.?)\s*(\d+(?:[.,]\d+)?)\s*[-–—|:]\s*(.+)/i,
+        /(.+?)\s+(?:cap[ií]tulo|cap\.?|chapter|ch\.?|episodio|ep\.?|episode)\s+(\d+(?:[.,]\d+)?)/i
+    ];
+
+    for (const pattern of titlePatterns) {
+        const match = title.match(pattern);
+        if (match) {
+            const seriesName = (match[1] || match[2]).trim();
+            const chapterNum = parseFloat((match[2] || match[1]).replace(',', '.'));
+            return {
+                series: seriesName,
+                chapterNumber: chapterNum,
+                chapterLabel: `Capítulo ${chapterNum}`,
+                domain: window.location.hostname,
+                url: url
+            };
+        }
+    }
+
+    return null; // Could not detect
+}
+
+function humanizeSlug(slug) {
+    return slug
+        .replace(/[-_]/g, ' ')
+        .replace(/%20/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase())
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function makeSeriesSlug(seriesName) {
+    return seriesName
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove accents
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+}
+
+function recordReadingHistory(detected) {
+    if (!detected) return;
+    const { series, chapterNumber, chapterLabel, domain, url } = detected;
+
+    chrome.storage.local.get(['zap_reading_history'], (result) => {
+        const history = result.zap_reading_history || {};
+        const slug = makeSeriesSlug(series + '-' + domain); // domain-scoped slug
+
+        const existing = history[slug];
+        // Only update if chapter changed
+        if (existing && existing.chapterNumber === chapterNumber) return;
+
+        history[slug] = {
+            series,
+            chapterNumber,
+            chapterLabel,
+            domain,
+            url,
+            timestamp: Date.now()
+        };
+
+        // Keep max 100 entries (LRU)
+        const entries = Object.entries(history)
+            .sort((a, b) => b[1].timestamp - a[1].timestamp)
+            .slice(0, 100);
+        const trimmed = Object.fromEntries(entries);
+
+        chrome.storage.local.set({ zap_reading_history: trimmed }, () => {
+            console.log(`Zap & Key: Reading history recorded: "${series}" → ${chapterLabel}`);
+        });
+    });
+}
+
+function trackCurrentPage() {
+    const detected = detectSeriesChapter();
+    recordReadingHistory(detected);
+}
+
+// ============ STORAGE CHANGE LISTENER ============
 chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace !== 'local') return;
 
