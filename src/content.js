@@ -1339,74 +1339,183 @@ function removeAutoShortcutListener() {
     }
 }
 // ============ READING HISTORY TRACKING ============
+// ── Helpers for series/chapter detection ──
+
+function getMetaContent(property) {
+    const el = document.querySelector(`meta[property="${property}"], meta[name="${property}"]`);
+    return el ? (el.getAttribute('content') || '').trim() : '';
+}
+
+function getFirstH1() {
+    const h1 = document.querySelector('h1');
+    return h1 ? (h1.textContent || '').trim() : '';
+}
+
+// Words that don't identify a series (Spanish + English)
+const GENERIC_SLUGS = /^(manga|comic|series|leer|ver|read|view|watch|chapter|capitulo|catalog|library|blog|post|article|page|item|product|detail|entry|news|story|content|home|index|search|tag|category|archive|buscar|categoria|pagina|entrada)$/i;
+
+// ── Try to extract {series, chapterNumber} from a text string ──
+function extractFromText(text) {
+    if (!text) return null;
+    const patterns = [
+        // "La leyenda de la espada del norte - Capítulo 31"
+        /(.+?)\s*[-–—|:]\s*(?:cap[ií]tulo|cap\.?|chapter|ch\.?|episodio|ep\.?|episode|volumen|vol\.?)\s*(\d+(?:[.,]\d+)?)/i,
+        // "Capítulo 31 - La leyenda de la espada del norte" (chapter keyword must be at start)
+        /^(?:cap[ií]tulo|cap\.?|chapter|ch\.?|episodio|ep\.?|episode|volumen|vol\.?)\s*(\d+(?:[.,]\d+)?)\s*[-–—|:]\s*(.+)/i,
+        // "La leyenda de la espada del norte Capítulo 31" (no separator)
+        /(.+?)\s+(?:cap[ií]tulo|cap\.?|chapter|ch\.?|episodio|ep\.?|episode|volumen|vol\.?)\s+(\d+(?:[.,]\d+)?)/i
+    ];
+    for (const pat of patterns) {
+        const m = text.match(pat);
+        if (m) {
+            // Figure out which group is series and which is chapter
+            let seriesName, chapterStr;
+            if (isNaN(parseFloat(m[1]))) {
+                // First group is text (series name)
+                seriesName = m[1];
+                chapterStr = m[2];
+            } else {
+                // First group is a number (chapter)
+                chapterStr = m[1];
+                seriesName = m[2];
+            }
+            const chapterNum = parseFloat(chapterStr.replace(',', '.'));
+            seriesName = (seriesName || '').trim();
+            // Remove site-name suffix after | and trailing junk
+            seriesName = seriesName.replace(/\s*\|.*$/, '').trim();
+            seriesName = seriesName.replace(/\s*(?:online|sub|español|english|raw|hd|full|gratis)\s*$/i, '').trim();
+            if (seriesName && !isNaN(chapterNum) && chapterNum > 0) {
+                return { series: seriesName, chapterNumber: chapterNum };
+            }
+        }
+    }
+    return null;
+}
+
+// ── Score a candidate (higher = better) ──
+function scoreCandidate(candidate, sourceWeight) {
+    if (!candidate || !candidate.series || isNaN(candidate.chapterNumber)) return -1000;
+    let score = 0;
+
+    // Chapter number plausibility: 1–9999 is a real chapter; >9999 is likely a DB id
+    const ch = candidate.chapterNumber;
+    if (ch >= 1 && ch <= 9999 && Number.isInteger(ch)) {
+        score += 50;
+    } else if (ch > 9999) {
+        score -= 200; // Almost certainly an ID, not a chapter
+    } else {
+        score += 20; // Decimals (e.g. ch 12.5) — plausible but unusual
+    }
+
+    // Series name quality: must be meaningful, not a generic path segment
+    const series = candidate.series;
+    if (series.length >= 2 && !GENERIC_SLUGS.test(series)) {
+        score += 30;
+    } else if (GENERIC_SLUGS.test(series)) {
+        score -= 100;
+    }
+
+    // Source weight: og:title=20  h1=15  title=10  url=5  url-plain=0
+    score += sourceWeight;
+
+    return score;
+}
+
 function detectSeriesChapter() {
     const url = window.location.href;
-    const title = document.title || '';
+    const candidates = [];
 
-    // ── Strategy 1: Parse URL path segments ──
+    // ── Source 1: og:title meta tag (highest quality) ──
+    const ogTitle = getMetaContent('og:title');
+    if (ogTitle) {
+        const extracted = extractFromText(ogTitle);
+        if (extracted) candidates.push({ ...extracted, source: 'og:title', weight: 20 });
+    }
+
+    // ── Source 2: First <h1> ──
+    const h1 = getFirstH1();
+    if (h1 && h1 !== ogTitle) {
+        const extracted = extractFromText(h1);
+        if (extracted) candidates.push({ ...extracted, source: 'h1', weight: 15 });
+    }
+
+    // ── Source 3: <title> ──
+    const title = document.title || '';
+    if (title && title !== ogTitle && title !== h1) {
+        const extracted = extractFromText(title);
+        if (extracted) candidates.push({ ...extracted, source: 'title', weight: 10 });
+    }
+
+    // ── Source 4: URL path segments ──
     try {
         const pathname = new URL(url).pathname;
         const segments = pathname.replace(/\/+$/, '').split('/').filter(Boolean);
-        // Reverse-scan for the chapter pattern
+
+        // 4a: Explicit chapter pattern (e.g. "capitulo-42", "chapter-1088")
         for (let i = segments.length - 1; i >= 0; i--) {
             const seg = decodeURIComponent(segments[i]);
             const match = seg.match(/(?:capitulo|cap|chapter|ch|c|episodio|ep|episode|volumen|vol)[-_.\s]*(\d+(?:[.,]\d+)?)/i);
             if (match) {
                 const chapterNum = parseFloat(match[1].replace(',', '.'));
-                // Series name is the segment before, or the first meaningful segment
                 let seriesSeg = (i > 0) ? decodeURIComponent(segments[i - 1]) : '';
-                // If no meaningful series name, use the first segment
-                if (!seriesSeg || /^(manga|comic|series|leer|ver|read|view|chapter|capitulo|catalog|library)/i.test(seriesSeg)) {
-                    seriesSeg = segments.find(s => !/^(manga|comic|series|leer|ver|read|view|chapter|capitulo|catalog|library)/i.test(decodeURIComponent(s))) || segments[0];
+                if (!seriesSeg || GENERIC_SLUGS.test(seriesSeg)) {
+                    seriesSeg = segments.find(s => !GENERIC_SLUGS.test(decodeURIComponent(s))) || segments[0];
                 }
-                return {
+                candidates.push({
                     series: humanizeSlug(seriesSeg),
                     chapterNumber: chapterNum,
-                    chapterLabel: `Capítulo ${chapterNum}`,
-                    domain: window.location.hostname,
-                    url: url
-                };
+                    source: 'url-explicit',
+                    weight: 5
+                });
+                break;
             }
         }
-        // Check for a plain numeric last segment
-        const lastSeg = decodeURIComponent(segments[segments.length - 1]);
-        const plainMatch = lastSeg.match(/^(\d+(?:[.,]\d+)?)$/);
-        if (plainMatch && segments.length >= 2) {
-            const chapterNum = parseFloat(plainMatch[1].replace(',', '.'));
-            const seriesSeg = decodeURIComponent(segments[segments.length - 2]);
-            return {
-                series: humanizeSlug(seriesSeg),
-                chapterNumber: chapterNum,
-                chapterLabel: `Capítulo ${chapterNum}`,
-                domain: window.location.hostname,
-                url: url
-            };
+
+        // 4b: Plain numeric last segment — only if no explicit pattern matched
+        if (!candidates.some(c => c.source === 'url-explicit')) {
+            const lastSeg = decodeURIComponent(segments[segments.length - 1]);
+            const plainMatch = lastSeg.match(/^(\d+(?:[.,]\d+)?)$/);
+            if (plainMatch && segments.length >= 2) {
+                const chapterNum = parseFloat(plainMatch[1].replace(',', '.'));
+                const seriesSeg = decodeURIComponent(segments[segments.length - 2]);
+                // Only consider if chapterNum is plausible AND series name is meaningful
+                if (chapterNum <= 9999 && !GENERIC_SLUGS.test(seriesSeg)) {
+                    candidates.push({
+                        series: humanizeSlug(seriesSeg),
+                        chapterNumber: chapterNum,
+                        source: 'url-plain',
+                        weight: 0
+                    });
+                }
+            }
         }
     } catch (_) { /* URL parse error — continue */ }
 
-    // ── Strategy 2: Parse document title ──
-    const titlePatterns = [
-        /(.+?)\s*[-–—|]\s*(?:cap[ií]tulo|cap\.?|chapter|ch\.?|episodio|ep\.?|episode|volumen|vol\.?)\s*(\d+(?:[.,]\d+)?)/i,
-        /(?:cap[ií]tulo|cap\.?|chapter|ch\.?|episodio|ep\.?|episode|volumen|vol\.?)\s*(\d+(?:[.,]\d+)?)\s*[-–—|:]\s*(.+)/i,
-        /(.+?)\s+(?:cap[ií]tulo|cap\.?|chapter|ch\.?|episodio|ep\.?|episode)\s+(\d+(?:[.,]\d+)?)/i
-    ];
+    // ── Pick the best candidate ──
+    let best = null;
+    let bestScore = -1000;
 
-    for (const pattern of titlePatterns) {
-        const match = title.match(pattern);
-        if (match) {
-            const seriesName = (match[1] || match[2]).trim();
-            const chapterNum = parseFloat((match[2] || match[1]).replace(',', '.'));
-            return {
-                series: seriesName,
-                chapterNumber: chapterNum,
-                chapterLabel: `Capítulo ${chapterNum}`,
-                domain: window.location.hostname,
-                url: url
-            };
+    for (const c of candidates) {
+        const score = scoreCandidate(c, c.weight);
+        if (score > bestScore) {
+            bestScore = score;
+            best = c;
         }
     }
 
-    return null; // Could not detect
+    // Minimum score threshold: reject low-confidence matches
+    // (og:title + plausible chapter + good series = ~100; url-plain + good series = ~80)
+    if (best && bestScore >= 40) {
+        return {
+            series: best.series,
+            chapterNumber: best.chapterNumber,
+            chapterLabel: `Capítulo ${best.chapterNumber}`,
+            domain: window.location.hostname,
+            url: url
+        };
+    }
+
+    return null; // Could not detect with enough confidence
 }
 
 function humanizeSlug(slug) {
