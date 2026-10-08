@@ -1,0 +1,3 @@
+# Credenciales y tokens (nunca subir)
+.env
+.env.*
