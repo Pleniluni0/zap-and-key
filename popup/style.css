@@ -714,3 +714,85 @@ details li:last-child {
   white-space: nowrap;
   width: 100px;
 }
+
+/* ============ HISTORY: DOMAIN CONTROLS ============ */
+.btn-allow {
+  background-color: #27ae60;
+}
+
+.btn-allow:hover {
+  background-color: #1e8449;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.history-domain-card {
+  margin-bottom: 6px;
+}
+
+.hd-host {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #2c3e50;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 2px;
+}
+
+.hd-status {
+  font-size: 0.76rem;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.hd-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.hd-reset {
+  margin-top: 6px;
+  width: 100%;
+  background: none;
+  border: 1px dashed #bbb;
+  border-radius: 4px;
+  color: #666;
+  font-size: 0.76rem;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.hd-reset:hover {
+  background: #f0f0f0;
+}
+
+.hd-overrides {
+  margin-top: 6px;
+}
+
+.hd-overrides summary {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #2c3e50;
+  cursor: pointer;
+}
+
+.hd-overrides li {
+  gap: 6px;
+}
+
+.hd-override-host {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hd-badge {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+}

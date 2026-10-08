@@ -39,6 +39,7 @@
         "<all_urls>"
       ],
       "js": [
+        "src/history-filter.js",
         "src/content.js"
       ],
       "run_at": "document_end"

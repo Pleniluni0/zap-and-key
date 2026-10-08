@@ -1562,8 +1562,10 @@ function recordReadingHistory(detected) {
     if (!detected) return;
     const { series, chapterNumber, chapterLabel, domain, url } = detected;
 
-    chrome.storage.local.get(['zap_reading_history'], (result) => {
+    chrome.storage.local.get(['zap_reading_history', 'zap_history_domains'], (result) => {
         const history = result.zap_reading_history || {};
+        // Limpieza retroactiva: fuera lo que se guardó de dominios que no son cómics
+        if (typeof ZapHistoryFilter !== 'undefined') ZapHistoryFilter.purgeBlockedEntries(history, result.zap_history_domains || {});
         const slug = makeSeriesSlug(series + '-' + domain); // domain-scoped slug
 
         const existing = history[slug];
@@ -1591,9 +1593,40 @@ function recordReadingHistory(detected) {
     });
 }
 
+// Solo se guardan páginas que sean realmente un lector de cómics.
+// Las imágenes suelen cargar tarde (lazy-load), así que se reintenta unos segundos.
+let _historyTrackTimers = [];
 function trackCurrentPage() {
-    const detected = detectSeriesChapter();
-    recordReadingHistory(detected);
+    _historyTrackTimers.forEach(clearTimeout);
+    _historyTrackTimers = [];
+    if (typeof ZapHistoryFilter === 'undefined') return;
+
+    // Decisiones manuales del usuario (bloquear / forzar dominio)
+    chrome.storage.local.get(['zap_history_domains'], (res) => {
+        const overrides = res.zap_history_domains || {};
+
+        // Dominio bloqueado (por lista o por el usuario) → ni siquiera se analiza
+        if (!ZapHistoryFilter.shouldTrackDomain(window.location.hostname, overrides)) return;
+
+        let done = false;
+        const attempt = () => {
+            if (done) return;
+            const detected = detectSeriesChapter();
+            if (!detected) return;
+            const verdict = ZapHistoryFilter.evaluatePage(overrides);
+            if (!verdict.ok) {
+                if (verdict.reason === 'blocked-domain' || verdict.reason === 'user-blocked' ||
+                    verdict.reason.startsWith('negative:') || verdict.reason === 'anime-url') {
+                    done = true; // descarte definitivo, no reintentar
+                }
+                return;
+            }
+            done = true;
+            recordReadingHistory(detected);
+        };
+
+        [0, 1500, 4000, 9000].forEach(ms => _historyTrackTimers.push(setTimeout(attempt, ms)));
+    });
 }
 
 // ============ STORAGE CHANGE LISTENER ============

@@ -90,6 +90,18 @@
 
     <!-- ===== TAB: HISTORIAL ===== -->
     <div class="tab-content" id="tab-history">
+      <!-- Control del dominio actual -->
+      <div class="rules-section history-domain-card" id="historyDomainCard">
+        <h2>🌐 Dominio actual</h2>
+        <div class="hd-host" id="hdHost">—</div>
+        <div class="hd-status" id="hdStatus"></div>
+        <div class="hd-buttons">
+          <button id="hdBlock" class="btn btn-danger">🚫 No registrar</button>
+          <button id="hdAllow" class="btn btn-allow">✅ Registrar siempre</button>
+        </div>
+        <button id="hdReset" class="hd-reset" style="display:none">↺ Volver a automático</button>
+      </div>
+
       <div class="rules-section history-section">
         <h2>📖 Historial de Lectura</h2>
         <div id="historyList" class="rules-container">
@@ -97,6 +109,12 @@
         </div>
         <div id="historyEmptyState" class="empty-state">Navega a un cómic o manga para empezar el historial.</div>
       </div>
+
+      <!-- Dominios configurados manualmente -->
+      <details class="rules-section hd-overrides" id="hdOverridesBox" style="display:none">
+        <summary id="hdOverridesSummary">Dominios configurados</summary>
+        <ul id="hdOverridesList"></ul>
+      </details>
     </div>
 
     <!-- ===== TAB: AYUDA ===== -->
@@ -158,6 +176,7 @@
             <li>Agrupado por dominio (click para expandir/colapsar)</li>
             <li><strong>Click</strong> en cualquier entrada → abre esa página</li>
             <li>Usa <strong>✕</strong> para borrar una entrada o <strong>🗑️</strong> para limpiar un dominio</li>
+            <li>Solo se guardan páginas que parecen un <strong>lector de cómics</strong>. Si una web no se guarda, entra en <strong>📖 Historial</strong> y pulsa <strong>✅ Registrar siempre</strong>; si se cuela una que no es un cómic, pulsa <strong>🚫 No registrar</strong> (o el <strong>🚫</strong> junto al dominio)</li>
           </ol>
           <p class="help-tip">💡 Soporta español e inglés: "Capítulo", "Chapter", "Ch.", "Episodio", "Ep.", etc.</p>
         </details>
@@ -185,6 +204,7 @@
     </div>
   </div>
 
+  <script src="../src/history-filter.js"></script>
   <script src="popup.js"></script>
 </body>
 

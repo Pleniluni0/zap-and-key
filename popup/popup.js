@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let pausedDomains = {};      // hostname -> bool
     let pendingConfirm = null;   // { hostname } for domain-delete modal
     let currentHostname = '';
+    let currentIsWeb = false;   // la pestaña activa es http(s)
 
     // ============ TAB SWITCHING ============
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -51,7 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs.length === 0) return;
         try {
-            currentHostname = new URL(tabs[0].url).hostname;
+            const _u = new URL(tabs[0].url);
+            currentHostname = _u.hostname;
+            currentIsWeb = (_u.protocol === 'http:' || _u.protocol === 'https:');
         } catch (_) {
             currentHostname = '';
         }
@@ -713,12 +716,117 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let allHistory = {};
 
+    let domainOverrides = {};   // host normalizado -> 'block' | 'allow'
+
     function loadHistory() {
-        chrome.storage.local.get(['zap_reading_history'], (result) => {
+        chrome.storage.local.get(['zap_reading_history', 'zap_history_domains'], (result) => {
             allHistory = result.zap_reading_history || {};
+            domainOverrides = result.zap_history_domains || {};
+            // Limpieza retroactiva de dominios que no son cómics (Amazon, Instagram, anime...)
+            if (typeof ZapHistoryFilter !== 'undefined' && ZapHistoryFilter.purgeBlockedEntries(allHistory, domainOverrides) > 0) {
+                chrome.storage.local.set({ zap_reading_history: allHistory });
+            }
             renderHistory();
+            renderDomainControls();
         });
     }
+
+    // ---- Bloquear / forzar dominios ----
+    const hdHost = document.getElementById('hdHost');
+    const hdStatus = document.getElementById('hdStatus');
+    const hdBlock = document.getElementById('hdBlock');
+    const hdAllow = document.getElementById('hdAllow');
+    const hdReset = document.getElementById('hdReset');
+    const hdOverridesBox = document.getElementById('hdOverridesBox');
+    const hdOverridesSummary = document.getElementById('hdOverridesSummary');
+    const hdOverridesList = document.getElementById('hdOverridesList');
+
+    // mode: 'block' | 'allow' | null (volver a automático)
+    function setDomainOverride(host, mode) {
+        const F = ZapHistoryFilter;
+        const key = F.normalizeHost(host);
+        if (!key) return;
+        if (mode) domainOverrides[key] = mode; else delete domainOverrides[key];
+
+        // Al bloquear, se borra también lo ya guardado de ese dominio
+        if (mode === 'block') {
+            for (const slug of Object.keys(allHistory)) {
+                if (F.normalizeHost(allHistory[slug].domain) === key) delete allHistory[slug];
+            }
+        }
+        chrome.storage.local.set({
+            zap_history_domains: domainOverrides,
+            zap_reading_history: allHistory
+        }, () => {
+            renderHistory();
+            renderDomainControls();
+        });
+    }
+
+    function renderDomainControls() {
+        const F = ZapHistoryFilter;
+        const host = currentHostname;
+        const valid = !!host && currentIsWeb;
+
+        hdHost.textContent = valid ? host : 'Esta pestaña no es una página web';
+        hdBlock.disabled = !valid;
+        hdAllow.disabled = !valid;
+
+        let status = valid ? F.domainStatus(host, domainOverrides) : null;
+        const labels = {
+            'allow': '✅ Forzado: se registra siempre (sin filtros)',
+            'block': '🚫 Bloqueado por ti: no se registra',
+            'auto-blocked': '🚫 Bloqueado automáticamente (no parece un sitio de cómics)',
+            'auto': '🤖 Automático: solo se registra si la página parece un lector de cómics'
+        };
+        hdStatus.textContent = status ? labels[status] : '';
+
+        if (status === 'block') hdBlock.disabled = true;
+        if (status === 'allow') hdAllow.disabled = true;
+        if (status === 'auto-blocked') hdBlock.disabled = true; // ya está bloqueado
+        hdReset.style.display = (valid && F.getOverride(host, domainOverrides)) ? 'block' : 'none';
+
+        renderOverridesList();
+    }
+
+    function renderOverridesList() {
+        hdOverridesList.innerHTML = '';
+        const entries = Object.entries(domainOverrides).sort((a, b) => a[0].localeCompare(b[0]));
+        if (entries.length === 0) {
+            hdOverridesBox.style.display = 'none';
+            return;
+        }
+        hdOverridesBox.style.display = 'block';
+        hdOverridesSummary.textContent = `Dominios configurados (${entries.length})`;
+
+        entries.forEach(([host, mode]) => {
+            const li = document.createElement('li');
+
+            const name = document.createElement('span');
+            name.className = 'hd-override-host';
+            name.textContent = host;
+            name.title = host;
+
+            const badge = document.createElement('span');
+            badge.className = 'hd-badge';
+            badge.textContent = mode === 'allow' ? '✅ siempre' : '🚫 nunca';
+
+            const del = document.createElement('button');
+            del.className = 'delete-btn';
+            del.innerHTML = '✕';
+            del.title = 'Volver a automático';
+            del.addEventListener('click', () => setDomainOverride(host, null));
+
+            li.appendChild(name);
+            li.appendChild(badge);
+            li.appendChild(del);
+            hdOverridesList.appendChild(li);
+        });
+    }
+
+    hdBlock.addEventListener('click', () => setDomainOverride(currentHostname, 'block'));
+    hdAllow.addEventListener('click', () => setDomainOverride(currentHostname, 'allow'));
+    hdReset.addEventListener('click', () => setDomainOverride(currentHostname, null));
 
     function renderHistory() {
         historyList.innerHTML = '';
@@ -774,7 +882,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 deleteHistoryDomain(domain);
             });
 
+            // Dejar de registrar este dominio (y borrar lo guardado)
+            const blockDomainBtn = document.createElement('button');
+            blockDomainBtn.className = 'delete-domain-btn';
+            blockDomainBtn.innerHTML = '🚫';
+            blockDomainBtn.title = `No registrar más ${domain} (borra también su historial)`;
+            blockDomainBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDomainOverride(domain, 'block');
+            });
+
             domainHeader.appendChild(domainName);
+            domainHeader.appendChild(blockDomainBtn);
             domainHeader.appendChild(deleteDomainBtn);
             summary.appendChild(domainHeader);
             details.appendChild(summary);

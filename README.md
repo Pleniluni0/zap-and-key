@@ -55,6 +55,9 @@ Automatically detects series and chapter from the page URL or title, so you alwa
 | 🧠 Smart detection | Parses URL patterns + `<meta og:title>` + `<h1>` + `<title>` |
 | 🔗 Compound slugs | Supports `{series}_{timestamp}-{ch}_{page}` format (manhwaweb, etc.) |
 | 🌐 Multi-site | Works on any comic/manga site (Spanish, English, Japanese) |
+| 🛡️ Comic-only filter | Only saves pages that look like a real comic reader (reader container / several full-size page images + comic context). Ignores stores (Amazon…), social networks, streaming (Pluto TV…), anime sites, product landings and video players. Logic lives in `src/history-filter.js` |
+| 🌐 Per-domain control | In the 📖 Historial tab: **🚫 No registrar** (never record this domain, also wipes its entries) or **✅ Registrar siempre** (force-record it, skipping all filters). 🚫 next to each domain in the list does the same; overrides can be reset from "Dominios configurados". Stored in `zap_history_domains` |
+| 🧹 Auto-cleanup | Entries from blocked domains already in storage are purged when opening the popup or recording a new chapter |
 | 📊 Per-series tracking | Tracks each series independently, even on the same domain |
 | 📁 Grouped by domain | History entries are grouped and collapsible by domain in its own tab |
 | 🖱️ One-click resume | Click any entry to jump straight to your last chapter |
@@ -205,6 +208,7 @@ zap-and-key/
 ├── manifest.json          # MV3 manifest
 ├── src/
 │   ├── content.js         # Main engine (zap, keybinds, auto-scroll, observer, overlay)
+│   ├── history-filter.js  # Reading-history filter (comic-reader detection + blocklist)
 │   └── background.js      # Service worker
 ├── popup/
 │   ├── popup.html         # Extension popup UI
@@ -249,6 +253,7 @@ Page load → detectSeriesChapter() → parse URL/title patterns
 | `zap_keybinds` | `Record<domain, Array<{key, selector, label}>>` | Key→element mappings |
 | `zap_auto_config` | `Record<domain, {speed, nextKey, waitMs, enabled, autoShortcut}>` | Auto-scroll settings per domain |
 | `zap_reading_history` | `Record<slug, {series, chapterNumber, chapterLabel, domain, url, timestamp}>` | Reading progress tracker |
+| `zap_history_domains` | `Record<hostname, 'block' \| 'allow'>` | Manual per-domain overrides for the reading history |
 
 ---
 
