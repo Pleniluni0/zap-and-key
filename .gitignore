@@ -1,3 +1,6 @@
 # Credenciales y tokens (nunca subir)
 .env
 .env.*
+
+# Paquete generado para la Web Store
+dist/

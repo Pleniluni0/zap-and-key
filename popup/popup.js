@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
             rules.forEach((rule, index) => {
                 const li = document.createElement('li');
                 li.innerHTML = `
-                    <span class="rule-text" title="${escapeHtml(rule)}">${truncateText(rule, 40)}</span>
+                    <span class="rule-text" title="${escapeHtml(rule)}">${escapeHtml(truncateText(rule, 40))}</span>
                     <button class="delete-btn" title="Eliminar regla">✕</button>
                 `;
                 li.querySelector('.delete-btn').addEventListener('click', () => {
@@ -930,7 +930,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 li.addEventListener('click', (e) => {
                     // Don't navigate if clicking delete button
                     if (e.target.closest('.delete-btn')) return;
-                    chrome.tabs.create({ url: entry.url, active: true });
+                    if (/^https?:\/\//i.test(entry.url)) chrome.tabs.create({ url: entry.url, active: true });
                 });
 
                 // Delete button
@@ -1018,7 +1018,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (confirm('¿Importar reglas y atajos? Esto sobrescribirá los datos existentes para los mismos dominios.')) {
-                    const keys = Object.keys(data);
+                    const ALLOWED_KEYS = ['zap_rules', 'zap_paused', 'zap_keybinds', 'zap_auto_config', 'zap_reading_history', 'zap_history_domains'];
+                    const keys = Object.keys(data).filter(k => ALLOWED_KEYS.includes(k) && data[k] && typeof data[k] === 'object' && !Array.isArray(data[k]));
                     let done = 0;
                     keys.forEach(key => {
                         chrome.storage.local.set({ [key]: data[key] }, () => {

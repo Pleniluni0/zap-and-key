@@ -1,4 +1,7 @@
-console.log("Zap & Key content script loaded");
+// Logs desactivados en producción (poner true solo para depurar)
+const ZAP_DEBUG = false;
+const zlog = (...args) => { if (ZAP_DEBUG) console.log(...args); };
+zlog("Zap & Key content script loaded");
 
 // ============ STATE ============
 let isZapMode = false;
@@ -191,7 +194,7 @@ function onKeybindModeKeyDown(e) {
         e.stopPropagation();
         isKeybindMode = false;
         exitKeybindMode();
-        console.log("Zap & Key: Keybind mode cancelled via Escape");
+        zlog("Zap & Key: Keybind mode cancelled via Escape");
     }
 }
 
@@ -214,7 +217,7 @@ function onKeyDown(e) {
         e.stopPropagation();
         isZapMode = false;
         disableZapListeners();
-        console.log("Zap & Key: Zap mode cancelled via Escape");
+        zlog("Zap & Key: Zap mode cancelled via Escape");
     }
 }
 
@@ -281,7 +284,7 @@ function onClick(e) {
     const target = e.target;
 
     const selector = generateSelector(target);
-    console.log("Zap & Key: Selector generated:", selector);
+    zlog("Zap & Key: Selector generated:", selector);
 
     saveRule(selector);
 
@@ -309,7 +312,7 @@ function onKeybindClick(e) {
     const selector = generateSelector(target);
     const label = elementLabel(target);
 
-    console.log("Zap & Key: Keybind target:", selector, "label:", label);
+    zlog("Zap & Key: Keybind target:", selector, "label:", label);
 
     // Temporarily suppress escape-to-cancel so it doesn't close the prompt
     showKeybindPrompt(selector, label, target);
@@ -505,7 +508,7 @@ function saveKeybind(hostname, selector, key, label, element) {
 
         allBinds[hostname] = domainBinds;
         chrome.storage.local.set({ zap_keybinds: allBinds }, () => {
-            console.log("Zap & Key: Keybind saved:", formatKeyDisplay(key), "→", selector);
+            zlog("Zap & Key: Keybind saved:", formatKeyDisplay(key), "→", selector);
             _keybindsCache[hostname] = domainBinds;
             setupKeybindListener();
 
@@ -623,7 +626,7 @@ function setupKeybindListener() {
 
     _keydownHandlerBound = handleKeybindKeydown;
     document.addEventListener('keydown', _keydownHandlerBound, true);
-    console.log(`Zap & Key: ${binds.length} keybind(s) active on ${hostname}`);
+    zlog(`Zap & Key: ${binds.length} keybind(s) active on ${hostname}`);
 }
 
 function removeKeybindListener() {
@@ -675,7 +678,7 @@ function handleKeybindKeydown(e) {
                     }, 300);
 
                     el.click();
-                    console.log(`Zap & Key: ${formatKeyDisplay(e.key)} → clicked`, bind.selector);
+                    zlog(`Zap & Key: ${formatKeyDisplay(e.key)} → clicked`, bind.selector);
                     return; // only trigger first match
                 }
             } catch (_) { /* selector invalid — skip */ }
@@ -832,7 +835,7 @@ function undoLastZap() {
 
         lastZappedSelector = null;
         lastZappedElement = null;
-        console.log("Zap & Key: Undo successful");
+        zlog("Zap & Key: Undo successful");
     });
 }
 
@@ -891,7 +894,7 @@ function applyRules(rules) {
 
     const css = rules.map(r => `${r} { display: none !important; }`).join('\n');
     style.textContent = css;
-    console.log(`Zap & Key: ${rules.length} zap rules applied.`);
+    zlog(`Zap & Key: ${rules.length} zap rules applied.`);
 }
 
 function saveRule(selector) {
@@ -902,7 +905,7 @@ function saveRule(selector) {
         if (!rules.includes(selector)) {
             rules.push(selector);
             chrome.storage.local.set({ [hostname]: rules }, () => {
-                console.log("Zap & Key: Rule saved.");
+                zlog("Zap & Key: Rule saved.");
                 applyRules(rules);
             });
         }
@@ -934,7 +937,7 @@ function generateSelector(el) {
 
     const root = el.getRootNode();
     if (root && root !== document && root instanceof ShadowRoot) {
-        console.warn(
+        zlog(
             "Zap & Key: Element is inside a Shadow DOM. " +
             "CSS injection / keybind may not reach it. Trying best-effort selector."
         );
@@ -1025,7 +1028,7 @@ function loadAutoConfig() {
         const domainConfig = _autoConfig[hostname];
         setupAutoShortcutListener();
         if (domainConfig && domainConfig.enabled) {
-            console.log('Zap & Key: Auto-scroll resuming for', hostname);
+            zlog('Zap & Key: Auto-scroll resuming for', hostname);
             startAutoScroll(domainConfig.speed, domainConfig.nextKey, domainConfig.waitMs, false);
         }
         // Track reading history on page load (with or without auto-scroll)
@@ -1092,7 +1095,7 @@ function startAutoScroll(speed, nextKey, waitMs, saveConfig) {
     }
 
     _autoScrollRafId = requestAnimationFrame(scrollStep);
-    console.log(`Zap & Key: Auto-scroll started (${speed}, nextKey=${nextKey}, wait=${wait}ms)`);
+    zlog(`Zap & Key: Auto-scroll started (${speed}, nextKey=${nextKey}, wait=${wait}ms)`);
 }
 
 function stopAutoScroll(saveConfig) {
@@ -1125,7 +1128,7 @@ function stopAutoScroll(saveConfig) {
         }
     }
 
-    console.log('Zap & Key: Auto-scroll stopped');
+    zlog('Zap & Key: Auto-scroll stopped');
 }
 
 function toggleAutoScroll() {
@@ -1144,7 +1147,7 @@ function toggleAutoScroll() {
 }
 
 function onAutoScrollReachBottom(nextKey, waitMs) {
-    console.log(`Zap & Key: Bottom reached, waiting ${waitMs}ms...`);
+    zlog(`Zap & Key: Bottom reached, waiting ${waitMs}ms...`);
 
     const totalSeconds = Math.ceil(waitMs / 1000);
     let remaining = totalSeconds;
@@ -1170,14 +1173,14 @@ function onAutoScrollReachBottom(nextKey, waitMs) {
                     try {
                         const el = document.querySelector(bind.selector);
                         if (el) {
-                            console.log(`Zap & Key: Auto-scroll triggering next: ${nextKey} → ${bind.selector}`);
+                            zlog(`Zap & Key: Auto-scroll triggering next: ${nextKey} → ${bind.selector}`);
                             el.click();
                             // Auto-scroll will resume on the next page via loadAutoConfig()
                             return;
                         }
                     } catch (_) { /* selector invalid */ }
                 }
-                console.warn(`Zap & Key: Auto-scroll next key "${nextKey}" not found in keybinds`);
+                zlog(`Zap & Key: Auto-scroll next key "${nextKey}" not found in keybinds`);
             }
 
             // If we're still on the same page (no navigation happened), restart scroll
@@ -1588,7 +1591,7 @@ function recordReadingHistory(detected) {
         const trimmed = Object.fromEntries(entries);
 
         chrome.storage.local.set({ zap_reading_history: trimmed }, () => {
-            console.log(`Zap & Key: Reading history recorded: "${series}" → ${chapterLabel}`);
+            zlog(`Zap & Key: Reading history recorded: "${series}" → ${chapterLabel}`);
         });
     });
 }

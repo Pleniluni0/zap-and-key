@@ -71,7 +71,7 @@ Automatically detects series and chapter from the page URL or title, so you alwa
 
 ### ⚡ Zap Mode — Remove elements
 
-1. Open the popup and click **⚡ Zap Mode** (or right-click the extension icon → *"Activar Zap Mode"*)
+1. Open the popup and click **⚡ Zap Mode** (or press `Alt+X`, remappable at `chrome://extensions/shortcuts`)
 2. Hover over any element on the page — it highlights in red
 3. **Click** the element to remove it
 4. An "Elemento eliminado — Deshacer" toast appears for 5 seconds
@@ -82,7 +82,7 @@ Automatically detects series and chapter from the page URL or title, so you alwa
 
 ### ⌨️ Key Bind Mode — Click buttons with keys
 
-1. Open the popup and click **⌨️ Key Bind** (or right-click the extension icon → *"Asignar tecla"*)
+1. Open the popup and click **⌨️ Key Bind**
 2. **Click** any button or link on the page (e.g., *"Siguiente"* / *"Next"*)
 3. A blue overlay appears: *"Pulse una tecla para asignar..."*
 4. **Press a key** (e.g., `→` right arrow, `N`, `F2`)
@@ -133,6 +133,9 @@ This one is **fully automatic** — no setup needed!
 
 ### From Chrome Web Store
 *Coming soon*
+
+## 🔒 Privacy
+All data stays in your browser (`chrome.storage.local`). No servers, analytics or remote code. See [PRIVACY.md](PRIVACY.md).
 
 ---
 
@@ -195,6 +198,7 @@ The popup has **4 tabs** for better organization:
 
 | Shortcut | Action |
 |----------|--------|
+| `Alt+X` | Toggle Zap Mode (remappable) |
 | *Custom (per domain)* | Toggle Auto-Scroll (configure in popup) |
 | *Your custom keys* | Trigger assigned buttons (per domain) |
 | `Escape` | Cancel any active mode |

@@ -1,12 +1,11 @@
 {
   "manifest_version": 3,
   "name": "Zap & Key",
-  "version": "2.0",
+  "version": "2.0.0",
   "description": "Elimina elementos HTML y asigna atajos de teclado a botones. Persistencia por dominio.",
   "permissions": [
     "activeTab",
-    "storage",
-    "scripting"
+    "storage"
   ],
   "action": {
     "default_popup": "popup/popup.html",
@@ -44,5 +43,6 @@
       ],
       "run_at": "document_end"
     }
-  ]
+  ],
+  "homepage_url": "https://github.com/Pleniluni0/zap-and-key"
 }
